@@ -2,7 +2,7 @@
   "name": "macvis",
   "version": "0.1.0",
   "description": "Local-first agentic AI assistant for macOS",
-  "main": "dist-electron/main.js",
+  "main": "out/main/main.js",
   "scripts": {
     "dev": "electron-vite dev --config electron-vite.config.ts",
     "build": "electron-vite build --config electron-vite.config.ts && electron-builder",
