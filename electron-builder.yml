@@ -1,0 +1,40 @@
+appId: ai.macvis.app
+productName: MacVis
+copyright: Copyright © 2025
+
+mac:
+  target:
+    - target: dmg
+    - target: zip
+  icon: assets/icon.icns
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  extendInfo:
+    NSMicrophoneUsageDescription: MacVis uses the microphone for voice input
+    NSCameraUsageDescription: MacVis may access camera for node features
+    NSAppleEventsUsageDescription: MacVis needs automation access to control apps
+    NSSystemAdministrationUsageDescription: MacVis needs admin access for some operations
+
+dmg:
+  background: assets/dmg-background.png
+  window:
+    width: 540
+    height: 380
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+  title: MacVis
+
+directories:
+  output: dist
+  buildResources: assets
+
+files:
+  - dist-electron/**/*
+  - dist/**/*
+  - skills/**/*
+  - package.json
