@@ -6,3 +6,12 @@ out/
 .env.local
 *.log
 .DS_Store
+
+# Internal planning docs (local only)
+CLAUDE.md
+ARCHITECTURE.md
+FOLDER_STRUCTURE.md
+PHASE_*.md
+UI_SPEC.md
+MCP_REGISTRY.md
+API_KEYS.md
