@@ -15,3 +15,9 @@ PHASE_*.md
 UI_SPEC.md
 MCP_REGISTRY.md
 API_KEYS.md
+
+# Local Claude Code settings
+.claude/
+
+# pnpm build allowlist (local approval only)
+pnpm-workspace.yaml
