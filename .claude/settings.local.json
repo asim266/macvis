@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Desktop_Commander__start_process",
+      "mcp__Desktop_Commander__interact_with_process",
+      "mcp__Desktop_Commander__read_process_output"
+    ]
+  }
+}

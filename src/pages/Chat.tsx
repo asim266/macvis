@@ -1,23 +1,22 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
 import { useChatStore } from '../stores/chatStore'
 import { useConfigStore } from '../stores/configStore'
 import { MessageBubble } from '../components/chat/MessageBubble'
 import { ChatInput } from '../components/chat/ChatInput'
 
+const QUICK_PROMPTS = [
+  'List my GitHub repos',
+  'What changed in my Downloads today?',
+  'Build a landing page for a SaaS',
+]
+
 export function Chat() {
   const {
-    sessions,
-    activeSessionId,
-    isStreaming,
-    streamingMessageId,
-    createSession,
-    setActiveSession,
-    addMessage,
-    appendStream,
-    addOrUpdateToolCall,
-    setStreaming,
-    setStreamingMessageId,
+    sessions, activeSessionId, isStreaming, streamingMessageId,
+    createSession, setActiveSession,
+    addMessage, appendStream, addOrUpdateToolCall,
+    setStreaming, setStreamingMessageId,
   } = useChatStore()
 
   const { load, loaded } = useConfigStore()
@@ -26,14 +25,8 @@ export function Chat() {
 
   const activeSession = sessions.find(s => s.id === activeSessionId)
 
-  useEffect(() => {
-    if (!loaded) load()
-  }, [loaded, load])
-
-  useEffect(() => {
-    if (sessions.length === 0) createSession()
-  }, [sessions.length, createSession])
-
+  useEffect(() => { if (!loaded) load() }, [loaded, load])
+  useEffect(() => { if (sessions.length === 0) createSession() }, [sessions.length, createSession])
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [activeSession?.messages.length, activeSession?.messages[activeSession.messages.length - 1]?.content])
@@ -64,10 +57,7 @@ export function Chat() {
     unsubs.push(window.macvis.agent.onToolCall((data: any) => {
       if (data.sessionId === activeSessionId) {
         addOrUpdateToolCall(activeSessionId, assistantId, {
-          name: data.name,
-          input: data.input,
-          result: data.result,
-          status: data.status,
+          name: data.name, input: data.input, result: data.result, status: data.status,
         })
       }
     }))
@@ -93,21 +83,25 @@ export function Chat() {
   }, [activeSessionId, addMessage, appendStream, addOrUpdateToolCall, setStreaming, setStreamingMessageId])
 
   const handleStop = useCallback(() => {
-    if (activeSessionId) {
-      window.macvis.agent.stop(activeSessionId)
-    }
+    if (activeSessionId) window.macvis.agent.stop(activeSessionId)
   }, [activeSessionId])
 
+  const isEmpty = !activeSession?.messages.length
+
   return (
-    <div className="flex flex-col h-full">
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Session tabs */}
       <div
-        className="flex items-center gap-1 px-3 overflow-x-auto"
         style={{
           height: 40,
-          borderBottom: '1px solid var(--border)',
-          background: 'var(--bg-secondary)',
+          borderBottom: '1px solid var(--line-1)',
+          background: 'var(--surface-1)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+          padding: '0 16px',
           flexShrink: 0,
+          overflowX: 'auto',
         }}
       >
         {sessions.map(session => (
@@ -115,17 +109,20 @@ export function Chat() {
             key={session.id}
             onClick={() => setActiveSession(session.id)}
             style={{
-              padding: '4px 12px',
-              borderRadius: 6,
-              border: 'none',
-              background: session.id === activeSessionId ? 'var(--bg-elevated)' : 'transparent',
-              color: session.id === activeSessionId ? 'var(--text-primary)' : 'var(--text-muted)',
+              padding: '6px 12px',
+              borderRadius: 7,
+              border: '1px solid',
+              borderColor: session.id === activeSessionId ? 'var(--line-2)' : 'transparent',
+              background: session.id === activeSessionId ? 'var(--surface-3)' : 'transparent',
+              color: session.id === activeSessionId ? 'var(--ink-1)' : 'var(--ink-3)',
               fontSize: 12,
+              fontWeight: 500,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
-              maxWidth: 160,
+              maxWidth: 180,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
+              transition: 'all 120ms var(--ease)',
             }}
           >
             {session.title}
@@ -133,69 +130,130 @@ export function Chat() {
         ))}
         <button
           onClick={createSession}
-          style={{
-            padding: '4px 8px',
-            borderRadius: 6,
-            border: 'none',
-            background: 'transparent',
-            color: 'var(--text-muted)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-          }}
           title="New chat ⌘N"
+          style={{
+            width: 24, height: 24, borderRadius: 6,
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            color: 'var(--ink-3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 120ms var(--ease)',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'var(--surface-3)'
+            e.currentTarget.style.color = 'var(--ink-1)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'transparent'
+            e.currentTarget.style.color = 'var(--ink-3)'
+          }}
         >
           <Plus size={14} />
         </button>
       </div>
 
-      {/* Messages */}
-      <div
-        className="flex-1 overflow-y-auto"
-        style={{ padding: '24px 32px', minHeight: 0 }}
-      >
-        {noApiKey && (
-          <div
-            style={{
-              background: 'rgba(248, 113, 113, 0.1)',
-              border: '1px solid var(--error)',
-              borderRadius: 8,
-              padding: '12px 16px',
-              marginBottom: 16,
-              fontSize: 13,
-              color: 'var(--error)',
-            }}
-          >
-            No Anthropic API key set. Go to <strong>Settings → API Keys</strong> and add your key.
-          </div>
-        )}
+      {/* Messages or empty state */}
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+        <div style={{ maxWidth: 760, margin: '0 auto', padding: '28px 32px', minHeight: '100%' }}>
+          {noApiKey && (
+            <div
+              style={{
+                background: 'oklch(68% 0.18 22 / 0.08)',
+                border: '1px solid oklch(68% 0.18 22 / 0.4)',
+                borderRadius: 10,
+                padding: '12px 16px',
+                marginBottom: 20,
+                fontSize: 13,
+                color: 'var(--err)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              }}
+            >
+              <span>
+                No Anthropic API key. Open <strong style={{ fontWeight: 600 }}>Settings → API Keys</strong> to add one.
+              </span>
+              <button onClick={() => setNoApiKey(false)} style={{ background: 'none', border: 'none', color: 'var(--err)', cursor: 'pointer', display: 'flex' }}>
+                <X size={14} />
+              </button>
+            </div>
+          )}
 
-        {!activeSession?.messages.length && (
-          <div
-            className="flex flex-col items-center justify-center h-full"
-            style={{ color: 'var(--text-muted)', gap: 8 }}
-          >
-            <span style={{ fontSize: 32 }}>🦞</span>
-            <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-secondary)' }}>MacVis</span>
-            <span style={{ fontSize: 13 }}>Your local AI assistant. Ask me anything.</span>
-          </div>
-        )}
-
-        {activeSession?.messages.map(msg => (
-          <MessageBubble
-            key={msg.id}
-            message={msg}
-            isStreaming={isStreaming && msg.id === streamingMessageId}
-          />
-        ))}
-        <div ref={bottomRef} />
+          {isEmpty ? (
+            <div
+              className="fade-up"
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                minHeight: 'calc(100vh - 160px)',
+                gap: 0,
+              }}
+            >
+              <div
+                style={{
+                  width: 56, height: 56, borderRadius: 16,
+                  background: 'linear-gradient(135deg, var(--accent) 0%, oklch(58% 0.18 25) 100%)',
+                  display: 'grid', placeItems: 'center',
+                  fontSize: 26, fontWeight: 700,
+                  color: 'oklch(15% 0 0)',
+                  fontFamily: 'var(--font-mono)',
+                  boxShadow: '0 0 60px -10px var(--accent-line), inset 0 1px 0 oklch(95% 0.05 55 / 0.3)',
+                  marginBottom: 24,
+                }}
+              >
+                M
+              </div>
+              <h1 style={{ fontSize: 24, fontWeight: 600, color: 'var(--ink-1)', letterSpacing: '-0.025em', marginBottom: 6 }}>
+                What can I do for you?
+              </h1>
+              <p style={{ fontSize: 13, color: 'var(--ink-3)', maxWidth: 380, lineHeight: 1.6, marginBottom: 28 }}>
+                Local-first AI with full Mac access. Ask me to write code, deploy a site, list files, draft emails — anything.
+              </p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 540 }}>
+                {QUICK_PROMPTS.map(p => (
+                  <button
+                    key={p}
+                    onClick={() => handleSend(p)}
+                    style={{
+                      padding: '7px 13px',
+                      background: 'var(--surface-2)',
+                      border: '1px solid var(--line-1)',
+                      borderRadius: 999,
+                      fontSize: 12,
+                      color: 'var(--ink-2)',
+                      cursor: 'pointer',
+                      transition: 'all 150ms var(--ease)',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.borderColor = 'var(--line-2)'
+                      e.currentTarget.style.color = 'var(--ink-1)'
+                      e.currentTarget.style.background = 'var(--surface-3)'
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.borderColor = 'var(--line-1)'
+                      e.currentTarget.style.color = 'var(--ink-2)'
+                      e.currentTarget.style.background = 'var(--surface-2)'
+                    }}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <>
+              {activeSession?.messages.map(msg => (
+                <MessageBubble
+                  key={msg.id}
+                  message={msg}
+                  isStreaming={isStreaming && msg.id === streamingMessageId}
+                />
+              ))}
+              <div ref={bottomRef} />
+            </>
+          )}
+        </div>
       </div>
 
-      <ChatInput
-        onSend={handleSend}
-        onStop={handleStop}
-        isStreaming={isStreaming}
-      />
+      <ChatInput onSend={handleSend} onStop={handleStop} isStreaming={isStreaming} />
     </div>
   )
 }

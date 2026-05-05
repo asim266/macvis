@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useConfigStore } from '../stores/configStore'
-import { CheckCircle, Eye, EyeOff, Plug, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, Check } from 'lucide-react'
 
 type Tab = 'apikeys' | 'models' | 'mcps' | 'telegram' | 'appearance'
 
-// ─── Reusable key input ───────────────────────────────────────────────────────
+// ─── Reusable input ───────────────────────────────────────────────────────────
 function KeyInput({
-  label, hint, configKey, value, onSave, placeholder,
+  label, hint, configKey, value, onSave, placeholder, mono = true,
 }: {
   label: string
   hint?: string
@@ -14,9 +14,11 @@ function KeyInput({
   value: string
   onSave: (key: string, value: string) => void
   placeholder?: string
+  mono?: boolean
 }) {
   const [local, setLocal] = useState(value)
   const [show, setShow] = useState(false)
+  const [focused, setFocused] = useState(false)
   const [saved, setSaved] = useState(false)
 
   useEffect(() => { setLocal(value) }, [value])
@@ -25,43 +27,110 @@ function KeyInput({
     if (local !== value) {
       onSave(configKey, local)
       setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
+      setTimeout(() => setSaved(false), 1800)
     }
   }
 
   return (
     <div style={{ marginBottom: 18 }}>
-      <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
+      <label
+        style={{
+          display: 'block',
+          fontSize: 10.5,
+          fontWeight: 600,
+          color: 'var(--ink-3)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.09em',
+          marginBottom: 8,
+        }}
+      >
         {label}
       </label>
-      <div className="flex items-center gap-2">
-        <div className="flex flex-1 items-center" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 8, padding: '0 12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            background: 'var(--surface-3)',
+            border: `1px solid ${focused ? 'var(--line-3)' : 'var(--line-1)'}`,
+            borderRadius: 8,
+            padding: '0 12px',
+            transition: 'border-color 120ms var(--ease), box-shadow 120ms var(--ease)',
+            boxShadow: focused ? '0 0 0 3px var(--accent-soft)' : 'none',
+          }}
+        >
           <input
             type={show ? 'text' : 'password'}
             value={local}
             onChange={e => setLocal(e.target.value)}
-            onBlur={commit}
-            onKeyDown={e => e.key === 'Enter' && commit()}
-            placeholder={placeholder || 'Enter key...'}
-            style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: 13, padding: '8px 0', fontFamily: 'monospace' }}
+            onBlur={() => { setFocused(false); commit() }}
+            onFocus={() => setFocused(true)}
+            onKeyDown={e => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+            placeholder={placeholder || 'Not set'}
+            style={{
+              flex: 1,
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              color: 'var(--ink-1)',
+              fontSize: 12.5,
+              padding: '9px 0',
+              fontFamily: mono ? 'var(--font-mono)' : 'var(--font-display)',
+              letterSpacing: 0,
+            }}
             className="selectable"
           />
-          <button onClick={() => setShow(v => !v)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}>
+          <button
+            onClick={() => setShow(v => !v)}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--ink-3)', padding: 4,
+              display: 'flex', alignItems: 'center',
+            }}
+          >
             {show ? <EyeOff size={13} /> : <Eye size={13} />}
           </button>
         </div>
-        {saved && <CheckCircle size={15} style={{ color: 'var(--success)', flexShrink: 0 }} />}
+        <div
+          style={{
+            width: 18, height: 18, flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            opacity: saved ? 1 : 0,
+            transition: 'opacity 200ms var(--ease)',
+            color: 'var(--ok)',
+          }}
+        >
+          <Check size={14} />
+        </div>
       </div>
-      {hint && <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{hint}</p>}
+      {hint && (
+        <p style={{ fontSize: 11.5, color: 'var(--ink-4)', marginTop: 6, lineHeight: 1.5 }}>
+          {hint}
+        </p>
+      )}
     </div>
   )
 }
 
-// ─── Section wrapper ──────────────────────────────────────────────────────────
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+// ─── Section ──────────────────────────────────────────────────────────────────
+function Section({ title, children, hint }: { title: string; children: React.ReactNode; hint?: string }) {
   return (
     <div style={{ marginBottom: 36 }}>
-      <h3 style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>{title}</h3>
+      <h3
+        style={{
+          fontSize: 10.5,
+          fontWeight: 700,
+          color: 'var(--ink-4)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.12em',
+          marginBottom: hint ? 4 : 18,
+          fontFamily: 'var(--font-mono)',
+        }}
+      >
+        {title}
+      </h3>
+      {hint && <p style={{ fontSize: 11.5, color: 'var(--ink-4)', marginBottom: 18, lineHeight: 1.5 }}>{hint}</p>}
       {children}
     </div>
   )
@@ -69,52 +138,75 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 // ─── MCP card ─────────────────────────────────────────────────────────────────
 function MCPCard({
-  name, displayName, description, icon, enabled, token, tokenLabel, tokenKey, onToggle, onTokenSave,
-}: {
-  name: string
-  displayName: string
-  description: string
-  icon: string
-  enabled: boolean
-  token?: string
-  tokenLabel?: string
-  tokenKey?: string
-  onToggle: (name: string, val: boolean) => void
-  onTokenSave: (key: string, val: string) => void
-}) {
+  name, displayName, description, icon, enabled, token, tokenLabel, tokenKey,
+  onToggle, onTokenSave,
+}: any) {
   const [localToken, setLocalToken] = useState(token || '')
   const [show, setShow] = useState(false)
+  const [focused, setFocused] = useState(false)
 
   useEffect(() => { setLocalToken(token || '') }, [token])
 
   return (
-    <div style={{ background: 'var(--bg-tertiary)', border: `1px solid ${enabled ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 10, padding: '14px 16px', marginBottom: 12 }}>
-      <div className="flex items-center justify-between" style={{ marginBottom: tokenKey ? 12 : 0 }}>
-        <div className="flex items-center gap-3">
-          <span style={{ fontSize: 22 }}>{icon}</span>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{displayName}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{description}</div>
+    <div
+      style={{
+        background: 'var(--surface-2)',
+        border: `1px solid ${enabled ? 'var(--accent-line)' : 'var(--line-1)'}`,
+        borderRadius: 10,
+        padding: '14px 16px',
+        marginBottom: 10,
+        transition: 'border-color 200ms var(--ease)',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: tokenKey ? 14 : 0 }}>
+        <div
+          style={{
+            width: 36, height: 36, borderRadius: 8,
+            background: 'var(--surface-3)',
+            border: '1px solid var(--line-1)',
+            display: 'grid', placeItems: 'center',
+            fontSize: 18, flexShrink: 0,
+          }}
+        >
+          {icon}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink-1)', letterSpacing: '-0.01em' }}>
+            {displayName}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 2, lineHeight: 1.5 }}>
+            {description}
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <span style={{
-            width: 8, height: 8, borderRadius: '50%',
-            background: enabled ? 'var(--success)' : 'var(--bg-elevated)',
-            border: `1px solid ${enabled ? 'var(--success)' : 'var(--border-bright)'}`,
-            display: 'inline-block',
-          }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <span
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '3px 8px',
+              background: enabled ? 'oklch(72% 0.155 150 / 0.1)' : 'var(--surface-3)',
+              border: `1px solid ${enabled ? 'oklch(72% 0.155 150 / 0.3)' : 'var(--line-1)'}`,
+              borderRadius: 999,
+              fontFamily: 'var(--font-mono)',
+              fontSize: 9.5, fontWeight: 600,
+              color: enabled ? 'var(--ok)' : 'var(--ink-3)',
+              textTransform: 'uppercase', letterSpacing: '0.08em',
+            }}
+          >
+            <span style={{ width: 5, height: 5, borderRadius: 999, background: 'currentColor' }} />
+            {enabled ? 'on' : 'off'}
+          </span>
           <button
             onClick={() => onToggle(name, !enabled)}
             style={{
-              padding: '4px 14px',
+              padding: '5px 11px',
               borderRadius: 6,
-              border: `1px solid ${enabled ? 'var(--error)' : 'var(--accent)'}`,
-              background: enabled ? 'rgba(248,113,113,0.1)' : 'var(--accent-dim)',
-              color: enabled ? 'var(--error)' : 'var(--accent)',
-              fontSize: 12,
+              border: '1px solid var(--line-2)',
+              background: enabled ? 'var(--surface-3)' : 'var(--accent)',
+              color: enabled ? 'var(--ink-1)' : 'oklch(15% 0 0)',
+              fontSize: 11.5, fontWeight: 600,
               cursor: 'pointer',
-              fontWeight: 500,
+              letterSpacing: '-0.005em',
+              transition: 'all 120ms var(--ease)',
             }}
           >
             {enabled ? 'Disable' : 'Enable'}
@@ -122,28 +214,115 @@ function MCPCard({
         </div>
       </div>
       {tokenKey && (
-        <div className="flex items-center gap-2">
-          <div className="flex flex-1 items-center" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, padding: '0 10px' }}>
-            <input
-              type={show ? 'text' : 'password'}
-              value={localToken}
-              onChange={e => setLocalToken(e.target.value)}
-              onBlur={() => onTokenSave(tokenKey, localToken)}
-              placeholder={tokenLabel || 'Token / API key'}
-              style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: 12, padding: '6px 0', fontFamily: 'monospace' }}
-              className="selectable"
-            />
-            <button onClick={() => setShow(v => !v)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 2 }}>
-              {show ? <EyeOff size={12} /> : <Eye size={12} />}
-            </button>
-          </div>
+        <div
+          style={{
+            display: 'flex', alignItems: 'center',
+            background: 'var(--surface-3)',
+            border: `1px solid ${focused ? 'var(--line-3)' : 'var(--line-1)'}`,
+            borderRadius: 7,
+            padding: '0 10px',
+            transition: 'border-color 120ms var(--ease)',
+          }}
+        >
+          <input
+            type={show ? 'text' : 'password'}
+            value={localToken}
+            onChange={e => setLocalToken(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => { setFocused(false); onTokenSave(tokenKey, localToken) }}
+            placeholder={tokenLabel || 'API key'}
+            style={{
+              flex: 1, background: 'transparent', border: 'none', outline: 'none',
+              color: 'var(--ink-1)',
+              fontSize: 12, padding: '7px 0',
+              fontFamily: 'var(--font-mono)',
+            }}
+            className="selectable"
+          />
+          <button
+            onClick={() => setShow(v => !v)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-3)', padding: 4, display: 'flex' }}
+          >
+            {show ? <EyeOff size={12} /> : <Eye size={12} />}
+          </button>
         </div>
       )}
     </div>
   )
 }
 
-// ─── Main Settings page ───────────────────────────────────────────────────────
+// ─── Toggle switch ────────────────────────────────────────────────────────────
+function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+      <div
+        onClick={() => onChange(!checked)}
+        style={{
+          width: 34, height: 20, borderRadius: 999,
+          background: checked ? 'var(--accent)' : 'var(--surface-3)',
+          border: `1px solid ${checked ? 'var(--accent)' : 'var(--line-2)'}`,
+          position: 'relative',
+          cursor: 'pointer',
+          transition: 'all 180ms var(--ease)',
+          flexShrink: 0,
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            top: 1,
+            left: checked ? 15 : 1,
+            width: 16, height: 16,
+            borderRadius: 999,
+            background: checked ? 'oklch(15% 0 0)' : 'var(--ink-2)',
+            transition: 'left 180ms var(--ease)',
+            boxShadow: '0 1px 2px rgb(0 0 0 / 0.4)',
+          }}
+        />
+      </div>
+      <span style={{ fontSize: 13, color: 'var(--ink-1)' }}>{label}</span>
+    </label>
+  )
+}
+
+// ─── Pill button group ────────────────────────────────────────────────────────
+function PillGroup<T extends string>({ options, value, onChange }: { options: T[]; value: T; onChange: (v: T) => void }) {
+  return (
+    <div
+      style={{
+        display: 'inline-flex',
+        background: 'var(--surface-3)',
+        border: '1px solid var(--line-1)',
+        borderRadius: 8,
+        padding: 3,
+        gap: 2,
+      }}
+    >
+      {options.map(opt => (
+        <button
+          key={opt}
+          onClick={() => onChange(opt)}
+          style={{
+            padding: '6px 14px',
+            borderRadius: 6,
+            border: 'none',
+            background: value === opt ? 'var(--surface-1)' : 'transparent',
+            color: value === opt ? 'var(--ink-1)' : 'var(--ink-3)',
+            fontSize: 12, fontWeight: 500,
+            cursor: 'pointer',
+            textTransform: 'capitalize',
+            transition: 'all 120ms var(--ease)',
+            boxShadow: value === opt ? 'var(--shadow-1)' : 'none',
+          }}
+        >
+          {opt}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ─── Main Settings ────────────────────────────────────────────────────────────
 export function Settings() {
   const { config, loaded, load, set } = useConfigStore()
   const [tab, setTab] = useState<Tab>('apikeys')
@@ -151,7 +330,7 @@ export function Settings() {
   useEffect(() => { if (!loaded) load() }, [loaded, load])
 
   if (!loaded || !config) {
-    return <div style={{ padding: 32, color: 'var(--text-muted)', fontSize: 13 }}>Loading config...</div>
+    return <div style={{ padding: 32, color: 'var(--ink-4)', fontSize: 13 }}>Loading…</div>
   }
 
   const tabs: { id: Tab; label: string }[] = [
@@ -163,7 +342,7 @@ export function Settings() {
   ]
 
   const mcps = [
-    { name: 'github', displayName: 'GitHub', icon: '🐙', description: 'Repos, PRs, issues, Actions', tokenKey: 'mcps.github.token', tokenLabel: 'Personal Access Token' },
+    { name: 'github', displayName: 'GitHub', icon: '🐙', description: 'Repos, PRs, issues, Actions', tokenKey: 'mcps.github.token', tokenLabel: 'Personal Access Token (ghp_…)' },
     { name: 'supabase', displayName: 'Supabase', icon: '🟢', description: 'Database, auth, storage, edge functions', tokenKey: 'mcps.supabase.serviceKey', tokenLabel: 'Service Key' },
     { name: 'vercel', displayName: 'Vercel', icon: '▲', description: 'Deploy projects, manage domains', tokenKey: 'mcps.vercel.token', tokenLabel: 'Access Token' },
     { name: 'railway', displayName: 'Railway', icon: '🚂', description: 'Deploy services, manage databases', tokenKey: 'mcps.railway.token', tokenLabel: 'API Token' },
@@ -174,189 +353,225 @@ export function Settings() {
   ]
 
   return (
-    <div className="flex flex-col h-full" style={{ background: 'var(--bg-primary)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--surface-1)' }}>
       {/* Tab bar */}
-      <div style={{ display: 'flex', gap: 2, padding: '0 24px', borderBottom: '1px solid var(--border)', flexShrink: 0, background: 'var(--bg-secondary)' }}>
+      <div
+        style={{
+          display: 'flex',
+          padding: '0 24px',
+          borderBottom: '1px solid var(--line-1)',
+          background: 'var(--surface-1)',
+          flexShrink: 0,
+          gap: 0,
+        }}
+      >
         {tabs.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{
-            padding: '10px 16px',
-            border: 'none',
-            borderBottom: tab === t.id ? '2px solid var(--accent)' : '2px solid transparent',
-            background: 'transparent',
-            color: tab === t.id ? 'var(--text-primary)' : 'var(--text-muted)',
-            fontSize: 13,
-            fontWeight: tab === t.id ? 600 : 400,
-            cursor: 'pointer',
-            marginBottom: -1,
-          }}>
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            style={{
+              padding: '14px 14px 12px',
+              border: 'none',
+              background: 'transparent',
+              color: tab === t.id ? 'var(--ink-1)' : 'var(--ink-3)',
+              fontSize: 12.5,
+              fontWeight: 500,
+              cursor: 'pointer',
+              position: 'relative',
+              letterSpacing: '-0.005em',
+              transition: 'color 120ms var(--ease)',
+            }}
+            onMouseEnter={e => { if (tab !== t.id) e.currentTarget.style.color = 'var(--ink-2)' }}
+            onMouseLeave={e => { if (tab !== t.id) e.currentTarget.style.color = 'var(--ink-3)' }}
+          >
             {t.label}
+            {tab === t.id && (
+              <span
+                style={{
+                  position: 'absolute',
+                  bottom: -1, left: 12, right: 12,
+                  height: 2,
+                  background: 'var(--accent)',
+                  borderRadius: '2px 2px 0 0',
+                }}
+              />
+            )}
           </button>
         ))}
       </div>
 
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto" style={{ padding: '28px 32px', maxWidth: 660 }}>
+      {/* Content */}
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+        <div style={{ maxWidth: 680, padding: '32px 32px 64px', margin: '0 auto' }} className="fade-up">
 
-        {/* ── API Keys ── */}
-        {tab === 'apikeys' && (
-          <>
-            <Section title="AI Models">
-              <KeyInput label="Anthropic" hint="Required to use Claude models. Get from console.anthropic.com" configKey="apiKeys.anthropic" value={config.apiKeys?.anthropic || ''} onSave={set} placeholder="sk-ant-..." />
-              <KeyInput label="OpenAI" hint="Optional — used as fallback model or for GPT tools" configKey="apiKeys.openai" value={config.apiKeys?.openai || ''} onSave={set} placeholder="sk-..." />
-              <KeyInput label="Groq" hint="Fast inference for Llama / Mixtral models" configKey="apiKeys.groq" value={config.apiKeys?.groq || ''} onSave={set} />
-              <KeyInput label="Ollama URL" hint="Local Ollama server URL (default: http://localhost:11434)" configKey="apiKeys.ollama" value={config.apiKeys?.ollama || ''} onSave={set} placeholder="http://localhost:11434" />
-            </Section>
+          {tab === 'apikeys' && (
+            <>
+              <Section title="AI Models" hint="Required for the agent to work. Anthropic is the primary provider.">
+                <KeyInput label="Anthropic" hint="Get your key at console.anthropic.com" configKey="apiKeys.anthropic" value={config.apiKeys?.anthropic || ''} onSave={set} placeholder="sk-ant-..." />
+                <KeyInput label="OpenAI" hint="Optional — used as fallback model" configKey="apiKeys.openai" value={config.apiKeys?.openai || ''} onSave={set} placeholder="sk-..." />
+                <KeyInput label="Groq" hint="Fast inference for Llama / Mixtral" configKey="apiKeys.groq" value={config.apiKeys?.groq || ''} onSave={set} />
+                <KeyInput label="Ollama URL" hint="Local Ollama endpoint" configKey="apiKeys.ollama" value={config.apiKeys?.ollama || ''} onSave={set} placeholder="http://localhost:11434" mono={false} />
+              </Section>
 
-            <Section title="Web Search">
-              <KeyInput label="Tavily" hint="Best for AI-optimized search. tavily.com" configKey="apiKeys.tavily" value={config.apiKeys?.tavily || ''} onSave={set} />
-              <KeyInput label="Serper" hint="Google search API. serper.dev" configKey="apiKeys.serper" value={config.apiKeys?.serper || ''} onSave={set} />
-              <KeyInput label="Brave Search" configKey="apiKeys.brave" value={config.apiKeys?.brave || ''} onSave={set} />
-            </Section>
+              <Section title="Web Search">
+                <KeyInput label="Tavily" hint="Best for AI-optimized search · tavily.com" configKey="apiKeys.tavily" value={config.apiKeys?.tavily || ''} onSave={set} />
+                <KeyInput label="Serper" hint="Google search API · serper.dev" configKey="apiKeys.serper" value={config.apiKeys?.serper || ''} onSave={set} />
+                <KeyInput label="Brave Search" configKey="apiKeys.brave" value={config.apiKeys?.brave || ''} onSave={set} />
+              </Section>
 
-            <Section title="Other Services">
-              <KeyInput label="ElevenLabs" hint="Voice synthesis" configKey="apiKeys.elevenlabs" value={config.apiKeys?.elevenlabs || ''} onSave={set} />
-              <KeyInput label="Firecrawl" hint="Web scraping and crawling" configKey="apiKeys.firecrawl" value={config.apiKeys?.firecrawl || ''} onSave={set} />
-            </Section>
-          </>
-        )}
+              <Section title="Other">
+                <KeyInput label="ElevenLabs" hint="Voice synthesis" configKey="apiKeys.elevenlabs" value={config.apiKeys?.elevenlabs || ''} onSave={set} />
+                <KeyInput label="Firecrawl" hint="Web scraping" configKey="apiKeys.firecrawl" value={config.apiKeys?.firecrawl || ''} onSave={set} />
+              </Section>
+            </>
+          )}
 
-        {/* ── Models ── */}
-        {tab === 'models' && (
-          <>
-            <Section title="Default Model">
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Model</label>
-              <select
-                value={config.models?.default || 'claude-opus-4-5'}
-                onChange={e => set('models.default', e.target.value)}
-                style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)', fontSize: 13, padding: '9px 12px', width: '100%', outline: 'none', marginBottom: 16 }}
-              >
-                <optgroup label="Anthropic">
-                  <option value="claude-opus-4-5">claude-opus-4-5 (most capable)</option>
-                  <option value="claude-sonnet-4-5">claude-sonnet-4-5 (balanced)</option>
-                  <option value="claude-haiku-4-5">claude-haiku-4-5 (fastest)</option>
-                </optgroup>
-                <optgroup label="OpenAI">
-                  <option value="gpt-4o">gpt-4o</option>
-                  <option value="gpt-4o-mini">gpt-4o-mini</option>
-                </optgroup>
-              </select>
-              <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                Config stored at ~/Library/Application Support/macvis/config.json
-              </p>
-            </Section>
-
-            <Section title="Fallback Model">
-              <select
-                value={config.models?.fallback || 'gpt-4o'}
-                onChange={e => set('models.fallback', e.target.value)}
-                style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)', fontSize: 13, padding: '9px 12px', width: '100%', outline: 'none' }}
-              >
-                <option value="gpt-4o">gpt-4o</option>
-                <option value="gpt-4o-mini">gpt-4o-mini</option>
-                <option value="claude-sonnet-4-5">claude-sonnet-4-5</option>
-              </select>
-            </Section>
-          </>
-        )}
-
-        {/* ── MCPs / Integrations ── */}
-        {tab === 'mcps' && (
-          <>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
-              Enable integrations to give the agent access to developer platforms. Full MCP connectivity lands in Phase 4.
-            </p>
-            {mcps.map(mcp => (
-              <MCPCard
-                key={mcp.name}
-                {...mcp}
-                enabled={config.mcps?.[mcp.name]?.enabled || false}
-                token={config.mcps?.[mcp.name]?.token || config.mcps?.[mcp.name]?.serviceKey || config.mcps?.[mcp.name]?.botToken || config.mcps?.[mcp.name]?.apiToken || config.mcps?.[mcp.name]?.secretKey || ''}
-                onToggle={(name, val) => set(`mcps.${name}.enabled`, val)}
-                onTokenSave={set}
-              />
-            ))}
-          </>
-        )}
-
-        {/* ── Telegram ── */}
-        {tab === 'telegram' && (
-          <>
-            <div style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent)', borderRadius: 10, padding: '14px 16px', marginBottom: 24, fontSize: 13, lineHeight: 1.7 }}>
-              <strong style={{ color: 'var(--accent)' }}>Setup instructions</strong>
-              <ol style={{ color: 'var(--text-secondary)', marginTop: 8, paddingLeft: 20 }}>
-                <li>Open Telegram and message <strong>@BotFather</strong></li>
-                <li>Send <code style={{ background: 'var(--bg-elevated)', padding: '1px 5px', borderRadius: 3 }}>/newbot</code> and follow the prompts</li>
-                <li>Copy the bot token and paste below</li>
-                <li>Message <strong>@userinfobot</strong> to get your numeric user ID</li>
-              </ol>
-            </div>
-
-            <Section title="Bot Configuration">
-              <KeyInput label="Bot Token" hint="From @BotFather" configKey="apiKeys.telegram.botToken" value={config.apiKeys?.telegram?.botToken || ''} onSave={set} placeholder="1234567890:ABC..." />
-              <KeyInput label="Allowed User ID" hint="Your numeric Telegram user ID from @userinfobot" configKey="apiKeys.telegram.allowedUserId" value={config.apiKeys?.telegram?.allowedUserId || ''} onSave={set} placeholder="123456789" />
-            </Section>
-
-            <Section title="Startup">
-              <label className="flex items-center gap-3" style={{ cursor: 'pointer' }}>
-                <div
-                  onClick={() => set('telegram.runOnStartup', !config.telegram?.runOnStartup)}
+          {tab === 'models' && (
+            <>
+              <Section title="Default Model" hint="Used for all chat sessions unless overridden.">
+                <select
+                  value={config.models?.default || 'claude-opus-4-5'}
+                  onChange={e => set('models.default', e.target.value)}
                   style={{
-                    width: 36, height: 20, borderRadius: 10,
-                    background: config.telegram?.runOnStartup ? 'var(--accent)' : 'var(--bg-elevated)',
-                    border: `1px solid ${config.telegram?.runOnStartup ? 'var(--accent)' : 'var(--border-bright)'}`,
-                    position: 'relative', cursor: 'pointer', transition: 'background 150ms',
+                    background: 'var(--surface-3)',
+                    border: '1px solid var(--line-1)',
+                    borderRadius: 8,
+                    color: 'var(--ink-1)',
+                    fontSize: 13,
+                    padding: '9px 12px',
+                    width: '100%',
+                    outline: 'none',
+                    fontFamily: 'var(--font-mono)',
+                    cursor: 'pointer',
                   }}
                 >
-                  <div style={{
-                    position: 'absolute', top: 2,
-                    left: config.telegram?.runOnStartup ? 18 : 2,
-                    width: 14, height: 14, borderRadius: '50%',
-                    background: 'white', transition: 'left 150ms',
-                  }} />
+                  <optgroup label="Anthropic">
+                    <option value="claude-opus-4-5">claude-opus-4-5  ·  most capable</option>
+                    <option value="claude-sonnet-4-5">claude-sonnet-4-5  ·  balanced</option>
+                    <option value="claude-haiku-4-5">claude-haiku-4-5  ·  fastest</option>
+                  </optgroup>
+                  <optgroup label="OpenAI">
+                    <option value="gpt-4o">gpt-4o</option>
+                    <option value="gpt-4o-mini">gpt-4o-mini</option>
+                  </optgroup>
+                </select>
+              </Section>
+
+              <Section title="Fallback Model" hint="Used if the default fails or is unavailable.">
+                <select
+                  value={config.models?.fallback || 'gpt-4o'}
+                  onChange={e => set('models.fallback', e.target.value)}
+                  style={{
+                    background: 'var(--surface-3)',
+                    border: '1px solid var(--line-1)',
+                    borderRadius: 8,
+                    color: 'var(--ink-1)',
+                    fontSize: 13,
+                    padding: '9px 12px',
+                    width: '100%',
+                    outline: 'none',
+                    fontFamily: 'var(--font-mono)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="gpt-4o">gpt-4o</option>
+                  <option value="gpt-4o-mini">gpt-4o-mini</option>
+                  <option value="claude-sonnet-4-5">claude-sonnet-4-5</option>
+                </select>
+              </Section>
+
+              <Section title="Storage">
+                <p style={{ fontSize: 12, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', lineHeight: 1.6 }}>
+                  ~/Library/Application Support/macvis/config.json
+                </p>
+              </Section>
+            </>
+          )}
+
+          {tab === 'mcps' && (
+            <>
+              <Section title="Developer Platforms" hint="Enable integrations to give the agent access to your tools. Full MCP connectivity lands in Phase 4.">
+                {mcps.map(mcp => (
+                  <MCPCard
+                    key={mcp.name}
+                    {...mcp}
+                    enabled={config.mcps?.[mcp.name]?.enabled || false}
+                    token={
+                      config.mcps?.[mcp.name]?.token ||
+                      config.mcps?.[mcp.name]?.serviceKey ||
+                      config.mcps?.[mcp.name]?.botToken ||
+                      config.mcps?.[mcp.name]?.apiToken ||
+                      config.mcps?.[mcp.name]?.secretKey ||
+                      ''
+                    }
+                    onToggle={(name: string, val: boolean) => set(`mcps.${name}.enabled`, val)}
+                    onTokenSave={set}
+                  />
+                ))}
+              </Section>
+            </>
+          )}
+
+          {tab === 'telegram' && (
+            <>
+              <Section title="Setup">
+                <div
+                  style={{
+                    background: 'var(--accent-soft)',
+                    border: '1px solid var(--accent-line)',
+                    borderRadius: 10,
+                    padding: '14px 16px',
+                    marginBottom: 18,
+                    fontSize: 12.5,
+                    lineHeight: 1.7,
+                    color: 'var(--ink-2)',
+                  }}
+                >
+                  <ol style={{ paddingLeft: 18, margin: 0 }}>
+                    <li>Open Telegram and message <strong style={{ color: 'var(--ink-1)' }}>@BotFather</strong></li>
+                    <li>Send <code>/newbot</code> and follow the prompts</li>
+                    <li>Copy the bot token below</li>
+                    <li>Message <strong style={{ color: 'var(--ink-1)' }}>@userinfobot</strong> for your numeric ID</li>
+                  </ol>
                 </div>
-                <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>Start bot automatically when MacVis opens</span>
-              </label>
-            </Section>
-          </>
-        )}
+              </Section>
 
-        {/* ── Appearance ── */}
-        {tab === 'appearance' && (
-          <>
-            <Section title="Theme">
-              <div className="flex gap-2">
-                {(['system', 'dark', 'light'] as const).map(t => (
-                  <button key={t} onClick={() => set('ui.theme', t)} style={{
-                    padding: '7px 18px', borderRadius: 8,
-                    border: `1px solid ${config.ui?.theme === t ? 'var(--accent)' : 'var(--border)'}`,
-                    background: config.ui?.theme === t ? 'var(--accent-dim)' : 'var(--bg-tertiary)',
-                    color: config.ui?.theme === t ? 'var(--accent)' : 'var(--text-secondary)',
-                    fontSize: 13, cursor: 'pointer', textTransform: 'capitalize',
-                  }}>
-                    {t}
-                  </button>
-                ))}
-              </div>
-            </Section>
+              <Section title="Configuration">
+                <KeyInput label="Bot Token" hint="From @BotFather" configKey="apiKeys.telegram.botToken" value={config.apiKeys?.telegram?.botToken || ''} onSave={set} placeholder="1234567890:ABC..." />
+                <KeyInput label="Allowed User ID" hint="Your numeric Telegram user ID" configKey="apiKeys.telegram.allowedUserId" value={config.apiKeys?.telegram?.allowedUserId || ''} onSave={set} placeholder="123456789" />
+              </Section>
 
-            <Section title="Font Size">
-              <div className="flex gap-2">
-                {(['small', 'medium', 'large'] as const).map(s => (
-                  <button key={s} onClick={() => set('ui.fontSize', s)} style={{
-                    padding: '7px 18px', borderRadius: 8,
-                    border: `1px solid ${config.ui?.fontSize === s ? 'var(--accent)' : 'var(--border)'}`,
-                    background: config.ui?.fontSize === s ? 'var(--accent-dim)' : 'var(--bg-tertiary)',
-                    color: config.ui?.fontSize === s ? 'var(--accent)' : 'var(--text-secondary)',
-                    fontSize: 13, cursor: 'pointer', textTransform: 'capitalize',
-                  }}>
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </Section>
-          </>
-        )}
+              <Section title="Startup">
+                <Toggle
+                  checked={!!config.telegram?.runOnStartup}
+                  onChange={v => set('telegram.runOnStartup', v)}
+                  label="Start bot automatically when MacVis opens"
+                />
+              </Section>
+            </>
+          )}
 
+          {tab === 'appearance' && (
+            <>
+              <Section title="Theme">
+                <PillGroup
+                  options={['system', 'dark', 'light'] as const}
+                  value={(config.ui?.theme || 'system') as any}
+                  onChange={v => set('ui.theme', v)}
+                />
+              </Section>
+
+              <Section title="Font Size">
+                <PillGroup
+                  options={['small', 'medium', 'large'] as const}
+                  value={(config.ui?.fontSize || 'medium') as any}
+                  onChange={v => set('ui.fontSize', v)}
+                />
+              </Section>
+            </>
+          )}
+
+        </div>
       </div>
     </div>
   )

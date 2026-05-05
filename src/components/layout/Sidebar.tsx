@@ -1,12 +1,12 @@
-import { MessageSquare, Settings, Plug, Sparkles, Globe, Send } from 'lucide-react'
+import { MessageSquare, Settings as SettingsIcon, Plug, Sparkles, Globe, Send } from 'lucide-react'
 import type { Page } from '../../App'
 
-const NAV_ITEMS: { id: Page; icon: React.ReactNode; label: string; shortcut: string }[] = [
-  { id: 'chat', icon: <MessageSquare size={18} />, label: 'Chat', shortcut: '⌘1' },
-  { id: 'mcps', icon: <Plug size={18} />, label: 'MCPs', shortcut: '⌘2' },
-  { id: 'skills', icon: <Sparkles size={18} />, label: 'Skills', shortcut: '⌘3' },
-  { id: 'webbuilder', icon: <Globe size={18} />, label: 'Web Builder', shortcut: '⌘4' },
-  { id: 'telegram', icon: <Send size={18} />, label: 'Telegram', shortcut: '⌘5' },
+const NAV: { id: Page; icon: React.ReactNode; label: string; shortcut: string }[] = [
+  { id: 'chat', icon: <MessageSquare size={17} />, label: 'Chat', shortcut: '⌘1' },
+  { id: 'mcps', icon: <Plug size={17} />, label: 'Integrations', shortcut: '⌘2' },
+  { id: 'skills', icon: <Sparkles size={17} />, label: 'Skills', shortcut: '⌘3' },
+  { id: 'webbuilder', icon: <Globe size={17} />, label: 'Web Builder', shortcut: '⌘4' },
+  { id: 'telegram', icon: <Send size={17} />, label: 'Telegram', shortcut: '⌘5' },
 ]
 
 interface Props {
@@ -14,53 +14,88 @@ interface Props {
   onNavigate: (page: Page) => void
 }
 
+function NavItem({
+  active, icon, label, shortcut, onClick,
+}: { active: boolean; icon: React.ReactNode; label: string; shortcut: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      title={`${label}  ${shortcut}`}
+      style={{
+        position: 'relative',
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        background: active ? 'var(--surface-3)' : 'transparent',
+        color: active ? 'var(--ink-1)' : 'var(--ink-3)',
+        border: 'none',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'background 150ms var(--ease), color 150ms var(--ease)',
+      }}
+      onMouseEnter={e => {
+        if (!active) (e.currentTarget as HTMLElement).style.color = 'var(--ink-1)'
+      }}
+      onMouseLeave={e => {
+        if (!active) (e.currentTarget as HTMLElement).style.color = 'var(--ink-3)'
+      }}
+    >
+      {icon}
+      {active && (
+        <span
+          style={{
+            position: 'absolute',
+            left: -10,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: 3,
+            height: 18,
+            borderRadius: '0 2px 2px 0',
+            background: 'var(--accent)',
+          }}
+        />
+      )}
+    </button>
+  )
+}
+
 export function Sidebar({ currentPage, onNavigate }: Props) {
   return (
     <div
-      className="flex flex-col items-center py-2 gap-1"
       style={{
         width: 56,
-        background: 'var(--bg-secondary)',
-        borderRight: '1px solid var(--border)',
+        background: 'var(--surface-2)',
+        borderRight: '1px solid var(--line-1)',
         flexShrink: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        padding: '14px 0',
+        gap: 4,
       }}
     >
-      {NAV_ITEMS.map(item => (
-        <button
+      {NAV.map(item => (
+        <NavItem
           key={item.id}
+          active={currentPage === item.id}
+          icon={item.icon}
+          label={item.label}
+          shortcut={item.shortcut}
           onClick={() => onNavigate(item.id)}
-          title={`${item.label} ${item.shortcut}`}
-          className="relative flex items-center justify-center rounded-lg transition-colors"
-          style={{
-            width: 38,
-            height: 38,
-            background: currentPage === item.id ? 'var(--accent-dim)' : 'transparent',
-            color: currentPage === item.id ? 'var(--accent)' : 'var(--text-muted)',
-            border: 'none',
-            cursor: 'pointer',
-          }}
-        >
-          {item.icon}
-        </button>
+        />
       ))}
 
       <div style={{ flex: 1 }} />
 
-      <button
+      <NavItem
+        active={currentPage === 'settings'}
+        icon={<SettingsIcon size={17} />}
+        label="Settings"
+        shortcut="⌘,"
         onClick={() => onNavigate('settings')}
-        title="Settings ⌘,"
-        className="flex items-center justify-center rounded-lg transition-colors"
-        style={{
-          width: 38,
-          height: 38,
-          background: currentPage === 'settings' ? 'var(--accent-dim)' : 'transparent',
-          color: currentPage === 'settings' ? 'var(--accent)' : 'var(--text-muted)',
-          border: 'none',
-          cursor: 'pointer',
-        }}
-      >
-        <Settings size={18} />
-      </button>
+      />
     </div>
   )
 }
