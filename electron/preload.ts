@@ -65,4 +65,10 @@ contextBridge.exposeInMainWorld('macvis', {
   shell: {
     run: (command: string) => ipcRenderer.invoke('shell:run', { command }),
   },
+
+  provider: {
+    validate: (provider: string, key: string) =>
+      ipcRenderer.invoke('provider:validate', { provider, key }),
+    listAll: () => ipcRenderer.invoke('provider:listAll'),
+  },
 })

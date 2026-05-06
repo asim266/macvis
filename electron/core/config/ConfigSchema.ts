@@ -3,7 +3,9 @@ export const defaultConfig = {
   apiKeys: {
     anthropic: '',
     openai: '',
+    openrouter: '',
     gemini: '',
+    nanoBanana: '',  // Google image-gen (Nano Banana / Gemini 2.5 Flash Image)
     groq: '',
     ollama: 'http://localhost:11434',
     elevenlabs: '',
@@ -14,6 +16,8 @@ export const defaultConfig = {
     nanobrowser: '',
     telegram: { botToken: '', allowedUserId: '' },
   },
+  // Cached provider validation status + available models
+  providers: {} as Record<string, { valid: boolean; checkedAt: number; models: string[]; error?: string }>,
   models: {
     default: 'claude-opus-4-5',
     provider: 'anthropic',
