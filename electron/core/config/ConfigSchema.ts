@@ -23,6 +23,13 @@ export const defaultConfig = {
     provider: 'anthropic',
     fallback: 'gpt-4o',
     fallbackProvider: 'openai',
+    imageGen: '',
+    // Per-provider selected chat model — populated after user validates a key
+    // and picks one from the inline dropdown.
+    selections: {} as Record<string, string>,
+    // Fallback chain: ordered list of "provider:model" strings, max 3 entries.
+    // First entry is primary, second is fallback, third is last-resort.
+    chain: [] as string[],
   },
   mcps: {
     github: { enabled: false, token: '' },

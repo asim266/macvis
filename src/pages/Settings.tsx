@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useConfigStore } from '../stores/configStore'
-import { Eye, EyeOff, Check, X, Loader, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, Check, X, Loader, AlertCircle, ArrowUpDown } from 'lucide-react'
 
-type Tab = 'apikeys' | 'models' | 'mcps' | 'telegram' | 'appearance'
+type Tab = 'chat' | 'other' | 'mcps' | 'telegram' | 'appearance'
 type ValidationState = 'idle' | 'validating' | 'valid' | 'invalid'
 
 interface ProviderInfo {
@@ -12,19 +12,32 @@ interface ProviderInfo {
   error?: string
 }
 
-// ─── Provider key input with validate button ─────────────────────────────────
-function ProviderKeyInput({
-  label, hint, configKey, value, providerName, onSave, providerInfo, onValidate, placeholder,
+const PROVIDER_LABELS: Record<string, string> = {
+  anthropic: 'Anthropic',
+  openai: 'OpenAI',
+  openrouter: 'OpenRouter',
+  gemini: 'Gemini',
+  groq: 'Groq',
+  ollama: 'Ollama',
+  nanoBanana: 'Nano Banana',
+}
+
+// ─── Provider Card — key input + test + inline model picker ───────────────────
+function ProviderCard({
+  providerName, label, hint, configKey, value, placeholder,
+  providerInfo, selectedModel, onSave, onValidate, onSelectModel,
 }: {
+  providerName: string
   label: string
   hint?: string
   configKey: string
   value: string
-  providerName: string
-  onSave: (key: string, value: string) => void
-  providerInfo?: ProviderInfo
-  onValidate: (provider: string, key: string) => Promise<void>
   placeholder?: string
+  providerInfo?: ProviderInfo
+  selectedModel?: string
+  onSave: (key: string, value: string) => void
+  onValidate: (provider: string, key: string) => Promise<void>
+  onSelectModel: (provider: string, model: string) => void
 }) {
   const [local, setLocal] = useState(value)
   const [show, setShow] = useState(false)
@@ -52,49 +65,77 @@ function ProviderKeyInput({
     setState('validating')
     try {
       await onValidate(providerName, local)
-    } catch (e) {
+    } catch {
       setState('invalid')
     }
   }
 
+  const handleClear = () => {
+    onSave(configKey, '')
+    setLocal('')
+    setState('idle')
+  }
+
   const stateColor =
     state === 'valid' ? 'var(--ok)' : state === 'invalid' ? 'var(--err)' : 'var(--ink-4)'
+  const isValid = state === 'valid' && (providerInfo?.models?.length || 0) > 0
 
   return (
-    <div style={{ marginBottom: 18 }}>
+    <div
+      style={{
+        background: 'var(--surface-2)',
+        border: `1px solid ${isValid ? 'var(--accent-line)' : 'var(--line-1)'}`,
+        borderRadius: 10,
+        padding: '14px 16px',
+        marginBottom: 12,
+        transition: 'border-color 200ms var(--ease)',
+      }}
+    >
+      {/* Header row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-        <label
-          style={{
-            fontSize: 10.5, fontWeight: 600, color: 'var(--ink-3)',
-            textTransform: 'uppercase', letterSpacing: '0.09em',
-          }}
-        >
-          {label}
-        </label>
-        {providerInfo?.valid && providerInfo.models.length > 0 && (
-          <span
-            style={{
-              fontSize: 10, fontFamily: 'var(--font-mono)',
-              color: 'var(--ok)', letterSpacing: '0.04em',
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{
+            fontSize: 13, fontWeight: 600, color: 'var(--ink-1)',
+            letterSpacing: '-0.01em',
+          }}>{label}</span>
+          {isValid && (
+            <span style={{
+              fontSize: 9.5, fontFamily: 'var(--font-mono)',
+              color: 'var(--ok)', letterSpacing: '0.06em',
               background: 'oklch(72% 0.155 150 / 0.1)',
               border: '1px solid oklch(72% 0.155 150 / 0.3)',
               padding: '2px 7px', borderRadius: 999,
-              fontWeight: 600,
+              fontWeight: 600, textTransform: 'uppercase',
+            }}>
+              ✓ {providerInfo!.models.length} models
+            </span>
+          )}
+        </div>
+        {value && (
+          <button
+            onClick={handleClear}
+            title="Remove key"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--ink-4)', padding: 4, display: 'flex',
+              fontSize: 11,
             }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--err)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--ink-4)' }}
           >
-            {providerInfo.models.length} models
-          </span>
+            <X size={13} /> <span style={{ marginLeft: 4 }}>Remove</span>
+          </button>
         )}
       </div>
+
+      {/* Key input + test button */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <div
           style={{
-            flex: 1,
-            display: 'flex', alignItems: 'center',
+            flex: 1, display: 'flex', alignItems: 'center',
             background: 'var(--surface-3)',
             border: `1px solid ${focused ? 'var(--line-3)' : 'var(--line-1)'}`,
-            borderRadius: 8,
-            padding: '0 12px',
+            borderRadius: 8, padding: '0 12px',
             transition: 'border-color 120ms var(--ease), box-shadow 120ms var(--ease)',
             boxShadow: focused ? '0 0 0 3px var(--accent-soft)' : 'none',
           }}
@@ -115,10 +156,7 @@ function ProviderKeyInput({
           />
           <button
             onClick={() => setShow(v => !v)}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: 'var(--ink-3)', padding: 4, display: 'flex', alignItems: 'center',
-            }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-3)', padding: 4, display: 'flex', alignItems: 'center' }}
           >
             {show ? <EyeOff size={13} /> : <Eye size={13} />}
           </button>
@@ -127,28 +165,21 @@ function ProviderKeyInput({
           onClick={handleValidate}
           disabled={state === 'validating' || !local.trim()}
           style={{
-            padding: '8px 12px',
-            borderRadius: 8,
+            padding: '8px 12px', borderRadius: 8,
             border: '1px solid',
             borderColor: state === 'valid'
               ? 'oklch(72% 0.155 150 / 0.4)'
-              : state === 'invalid'
-                ? 'var(--err)'
-                : 'var(--line-2)',
+              : state === 'invalid' ? 'var(--err)' : 'var(--line-2)',
             background: state === 'valid'
               ? 'oklch(72% 0.155 150 / 0.1)'
-              : state === 'invalid'
-                ? 'oklch(68% 0.22 25 / 0.12)'
-                : 'var(--surface-3)',
+              : state === 'invalid' ? 'oklch(68% 0.22 25 / 0.12)' : 'var(--surface-3)',
             color: stateColor,
             fontSize: 11.5, fontWeight: 600,
             cursor: state === 'validating' || !local.trim() ? 'default' : 'pointer',
             opacity: !local.trim() ? 0.5 : 1,
             display: 'flex', alignItems: 'center', gap: 6,
-            letterSpacing: '-0.005em',
-            transition: 'all 120ms var(--ease)',
-            minWidth: 90,
-            justifyContent: 'center',
+            letterSpacing: '-0.005em', transition: 'all 120ms var(--ease)',
+            minWidth: 90, justifyContent: 'center',
           }}
         >
           {state === 'validating' && <Loader size={11} className="spin" />}
@@ -161,7 +192,9 @@ function ProviderKeyInput({
           </span>
         </button>
       </div>
-      {hint && state !== 'invalid' && (
+
+      {/* Hint */}
+      {hint && state !== 'invalid' && !isValid && (
         <p style={{ fontSize: 11.5, color: 'var(--ink-4)', marginTop: 6, lineHeight: 1.5 }}>
           {hint}
         </p>
@@ -175,6 +208,44 @@ function ProviderKeyInput({
           <AlertCircle size={12} style={{ flexShrink: 0, marginTop: 2 }} />
           <span style={{ wordBreak: 'break-word' }}>{providerInfo.error}</span>
         </p>
+      )}
+
+      {/* Inline model picker */}
+      {isValid && (
+        <div
+          className="fade-up"
+          style={{
+            marginTop: 12,
+            paddingTop: 12,
+            borderTop: '1px dashed var(--line-1)',
+          }}
+        >
+          <label style={{
+            display: 'block', fontSize: 10, fontWeight: 600, color: 'var(--ink-4)',
+            textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6,
+            fontFamily: 'var(--font-mono)',
+          }}>
+            Selected model
+          </label>
+          <select
+            value={selectedModel || providerInfo!.models[0]}
+            onChange={e => onSelectModel(providerName, e.target.value)}
+            style={{
+              background: 'var(--surface-3)',
+              border: '1px solid var(--line-1)',
+              borderRadius: 7,
+              color: 'var(--ink-1)',
+              fontSize: 12.5, padding: '7px 10px',
+              width: '100%', outline: 'none',
+              fontFamily: 'var(--font-mono)',
+              cursor: 'pointer',
+            }}
+          >
+            {providerInfo!.models.map(m => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+        </div>
       )}
     </div>
   )
@@ -264,6 +335,69 @@ function Section({ title, children, hint }: { title: string; children: React.Rea
       }}>{title}</h3>
       {hint && <p style={{ fontSize: 11.5, color: 'var(--ink-4)', marginBottom: 18, lineHeight: 1.5 }}>{hint}</p>}
       {children}
+    </div>
+  )
+}
+
+// ─── Fallback chain row ───────────────────────────────────────────────────────
+function ChainSlot({
+  label, badge, value, options, onChange,
+}: {
+  label: string
+  badge: string
+  value: string
+  options: { value: string; label: string }[]
+  onChange: (v: string) => void
+}) {
+  const isSet = !!value
+  return (
+    <div
+      style={{
+        background: 'var(--surface-3)',
+        border: `1px solid ${isSet ? 'var(--accent-line)' : 'var(--line-1)'}`,
+        borderRadius: 9,
+        padding: '10px 12px',
+        marginBottom: 8,
+        display: 'flex', alignItems: 'center', gap: 12,
+        transition: 'border-color 200ms var(--ease)',
+      }}
+    >
+      <div style={{
+        width: 26, height: 26, borderRadius: 6,
+        background: isSet ? 'var(--accent)' : 'var(--surface-4)',
+        color: isSet ? 'oklch(98% 0 0)' : 'var(--ink-4)',
+        display: 'grid', placeItems: 'center',
+        fontSize: 11, fontWeight: 700,
+        fontFamily: 'var(--font-mono)',
+        flexShrink: 0,
+      }}>
+        {badge}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 10, fontWeight: 600, color: 'var(--ink-3)',
+          textTransform: 'uppercase', letterSpacing: '0.1em',
+          fontFamily: 'var(--font-mono)', marginBottom: 4,
+        }}>{label}</div>
+        <select
+          value={value || ''}
+          onChange={e => onChange(e.target.value)}
+          style={{
+            background: 'transparent',
+            border: 'none', outline: 'none',
+            color: isSet ? 'var(--ink-1)' : 'var(--ink-4)',
+            fontSize: 12.5,
+            fontFamily: 'var(--font-mono)',
+            cursor: 'pointer',
+            width: '100%', padding: 0,
+          }}
+        >
+          <option value="">— None —</option>
+          {options.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      </div>
     </div>
   )
 }
@@ -370,8 +504,7 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
         boxShadow: checked ? '0 0 12px var(--accent-glow)' : 'none',
       }}>
         <div style={{
-          position: 'absolute', top: 1,
-          left: checked ? 17 : 1,
+          position: 'absolute', top: 1, left: checked ? 17 : 1,
           width: 16, height: 16, borderRadius: 999,
           background: checked ? 'oklch(98% 0 0)' : 'var(--ink-2)',
           transition: 'left 180ms var(--ease)',
@@ -408,12 +541,11 @@ function PillGroup<T extends string>({ options, value, onChange }: { options: T[
 // ─── Main Settings ────────────────────────────────────────────────────────────
 export function Settings() {
   const { config, loaded, load, set } = useConfigStore()
-  const [tab, setTab] = useState<Tab>('apikeys')
+  const [tab, setTab] = useState<Tab>('chat')
   const [providers, setProviders] = useState<Record<string, ProviderInfo>>({})
 
   useEffect(() => { if (!loaded) load() }, [loaded, load])
 
-  // Load cached provider info on mount
   useEffect(() => {
     window.macvis.provider.listAll().then((data: any) => {
       setProviders(data || {})
@@ -431,6 +563,27 @@ export function Settings() {
         error: result.error,
       },
     }))
+    // Auto-select first model if none selected yet
+    if (result.valid && result.models?.length && !config?.models?.selections?.[provider]) {
+      set(`models.selections.${provider}`, result.models[0])
+    }
+  }
+
+  const handleSelectModel = (provider: string, model: string) => {
+    set(`models.selections.${provider}`, model)
+  }
+
+  const handleChainSlotChange = (slot: number, value: string) => {
+    const chain = [...(config.models?.chain || [])]
+    while (chain.length < 3) chain.push('')
+    chain[slot] = value
+    // Mirror primary into models.default + provider for AgentLoop
+    if (slot === 0 && value) {
+      const [provider, model] = value.split(':')
+      set('models.default', model)
+      set('models.provider', provider)
+    }
+    set('models.chain', chain.slice(0, 3))
   }
 
   if (!loaded || !config) {
@@ -438,12 +591,34 @@ export function Settings() {
   }
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'apikeys', label: 'API Keys' },
-    { id: 'models', label: 'Models' },
+    { id: 'chat', label: 'Chat API Keys' },
+    { id: 'other', label: 'Other Keys' },
     { id: 'mcps', label: 'Integrations' },
     { id: 'telegram', label: 'Telegram' },
     { id: 'appearance', label: 'Appearance' },
   ]
+
+  const chatProviders = [
+    { name: 'anthropic', label: 'Anthropic', placeholder: 'sk-ant-...', hint: 'Get your key at console.anthropic.com' },
+    { name: 'openai', label: 'OpenAI', placeholder: 'sk-...', hint: 'Get your key at platform.openai.com' },
+    { name: 'openrouter', label: 'OpenRouter', placeholder: 'sk-or-...', hint: 'Access 200+ models with one key · openrouter.ai/keys' },
+    { name: 'gemini', label: 'Gemini', placeholder: 'AIza...', hint: 'Get your key at aistudio.google.com/apikey' },
+    { name: 'groq', label: 'Groq', placeholder: 'gsk_...', hint: 'Fast Llama / Mixtral inference · console.groq.com' },
+    { name: 'ollama', label: 'Ollama', placeholder: 'http://localhost:11434', hint: 'Local Ollama endpoint (no key needed)' },
+  ]
+
+  // Build chain options from validated providers + their selected model
+  const chainOptions: { value: string; label: string }[] = []
+  for (const cp of chatProviders) {
+    const info = providers[cp.name]
+    if (!info?.valid || !info.models?.length) continue
+    const selected = config.models?.selections?.[cp.name] || info.models[0]
+    chainOptions.push({
+      value: `${cp.name}:${selected}`,
+      label: `${PROVIDER_LABELS[cp.name] || cp.name} · ${selected}`,
+    })
+  }
+  const chain: string[] = config.models?.chain || []
 
   const mcps = [
     { name: 'github', displayName: 'GitHub', icon: '🐙', description: 'Repos, PRs, issues, Actions', tokenKey: 'mcps.github.token', tokenLabel: 'Personal Access Token (ghp_…)' },
@@ -455,14 +630,6 @@ export function Settings() {
     { name: 'netlify', displayName: 'Netlify', icon: '🔷', description: 'Deploy sites, forms, functions', tokenKey: 'mcps.netlify.token', tokenLabel: 'Auth Token' },
     { name: 'stripe', displayName: 'Stripe', icon: '💳', description: 'Payments, customers, subscriptions', tokenKey: 'mcps.stripe.secretKey', tokenLabel: 'Secret Key' },
   ]
-
-  // Aggregate all available models from validated providers
-  const allModels: { provider: string; id: string }[] = []
-  for (const [pname, info] of Object.entries(providers)) {
-    if (info?.valid && info.models) {
-      for (const id of info.models) allModels.push({ provider: pname, id })
-    }
-  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--surface-2)' }}>
@@ -508,19 +675,60 @@ export function Settings() {
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
         <div style={{ maxWidth: 680, padding: '32px 32px 64px', margin: '0 auto' }} className="fade-up">
 
-          {tab === 'apikeys' && (
+          {tab === 'chat' && (
             <>
-              <Section title="Chat Models" hint="Add and validate keys to enable each provider. Click ‘Test’ to verify and fetch available models.">
-                <ProviderKeyInput label="Anthropic" hint="Get your key at console.anthropic.com" configKey="apiKeys.anthropic" providerName="anthropic" value={config.apiKeys?.anthropic || ''} onSave={set} providerInfo={providers.anthropic} onValidate={handleValidate} placeholder="sk-ant-..." />
-                <ProviderKeyInput label="OpenAI" hint="Get your key at platform.openai.com" configKey="apiKeys.openai" providerName="openai" value={config.apiKeys?.openai || ''} onSave={set} providerInfo={providers.openai} onValidate={handleValidate} placeholder="sk-..." />
-                <ProviderKeyInput label="OpenRouter" hint="Access 200+ models with one key · openrouter.ai/keys" configKey="apiKeys.openrouter" providerName="openrouter" value={config.apiKeys?.openrouter || ''} onSave={set} providerInfo={providers.openrouter} onValidate={handleValidate} placeholder="sk-or-..." />
-                <ProviderKeyInput label="Gemini" hint="Get your key at aistudio.google.com/apikey" configKey="apiKeys.gemini" providerName="gemini" value={config.apiKeys?.gemini || ''} onSave={set} providerInfo={providers.gemini} onValidate={handleValidate} placeholder="AIza..." />
-                <ProviderKeyInput label="Groq" hint="Fast Llama / Mixtral inference · console.groq.com" configKey="apiKeys.groq" providerName="groq" value={config.apiKeys?.groq || ''} onSave={set} providerInfo={providers.groq} onValidate={handleValidate} placeholder="gsk_..." />
-                <ProviderKeyInput label="Ollama" hint="Local Ollama endpoint (no key needed)" configKey="apiKeys.ollama" providerName="ollama" value={config.apiKeys?.ollama || ''} onSave={set} providerInfo={providers.ollama} onValidate={handleValidate} placeholder="http://localhost:11434" />
-              </Section>
+              {/* Fallback chain — only if at least one provider is validated */}
+              {chainOptions.length > 0 && (
+                <Section
+                  title="Fallback Chain"
+                  hint="MacVis tries Primary first. If it fails or is rate-limited, it falls back to Secondary, then Tertiary."
+                >
+                  <ChainSlot label="Primary" badge="1°" value={chain[0] || ''} options={chainOptions} onChange={v => handleChainSlotChange(0, v)} />
+                  <ChainSlot label="Secondary" badge="2°" value={chain[1] || ''} options={chainOptions} onChange={v => handleChainSlotChange(1, v)} />
+                  <ChainSlot label="Tertiary" badge="3°" value={chain[2] || ''} options={chainOptions} onChange={v => handleChainSlotChange(2, v)} />
+                </Section>
+              )}
 
+              <Section
+                title="Providers"
+                hint="Add chat-model API keys. Click ‘Test’ to verify and load available models. Then pick a model below to use this provider in the fallback chain."
+              >
+                {chatProviders.map(p => (
+                  <ProviderCard
+                    key={p.name}
+                    providerName={p.name}
+                    label={p.label}
+                    hint={p.hint}
+                    placeholder={p.placeholder}
+                    configKey={`apiKeys.${p.name}`}
+                    value={config.apiKeys?.[p.name] || ''}
+                    providerInfo={providers[p.name]}
+                    selectedModel={config.models?.selections?.[p.name]}
+                    onSave={set}
+                    onValidate={handleValidate}
+                    onSelectModel={handleSelectModel}
+                  />
+                ))}
+              </Section>
+            </>
+          )}
+
+          {tab === 'other' && (
+            <>
               <Section title="Image Generation" hint="Nano Banana is Google's image-gen model (Gemini 2.5 Flash Image). Same key as Gemini works.">
-                <ProviderKeyInput label="Nano Banana" hint="Reuse your Gemini key for image generation" configKey="apiKeys.nanoBanana" providerName="nanoBanana" value={config.apiKeys?.nanoBanana || ''} onSave={set} providerInfo={providers.nanoBanana} onValidate={handleValidate} placeholder="AIza..." />
+                <ProviderCard
+                  providerName="nanoBanana"
+                  label="Nano Banana"
+                  hint="Reuse your Gemini key for image generation"
+                  configKey="apiKeys.nanoBanana"
+                  value={config.apiKeys?.nanoBanana || ''}
+                  placeholder="AIza..."
+                  providerInfo={providers.nanoBanana}
+                  selectedModel={config.models?.imageGen}
+                  onSave={set}
+                  onValidate={handleValidate}
+                  onSelectModel={(_, model) => set('models.imageGen', model)}
+                />
               </Section>
 
               <Section title="Web Search">
@@ -533,75 +741,6 @@ export function Settings() {
                 <KeyInput label="ElevenLabs" hint="Voice synthesis" configKey="apiKeys.elevenlabs" value={config.apiKeys?.elevenlabs || ''} onSave={set} />
                 <KeyInput label="Firecrawl" hint="Web scraping" configKey="apiKeys.firecrawl" value={config.apiKeys?.firecrawl || ''} onSave={set} />
               </Section>
-            </>
-          )}
-
-          {tab === 'models' && (
-            <>
-              {allModels.length === 0 ? (
-                <div style={{
-                  background: 'var(--surface-3)',
-                  border: '1px solid var(--line-1)',
-                  borderRadius: 10,
-                  padding: '24px',
-                  textAlign: 'center',
-                }}>
-                  <div style={{ fontSize: 14, color: 'var(--ink-1)', fontWeight: 500, marginBottom: 4 }}>
-                    No validated providers yet
-                  </div>
-                  <div style={{ fontSize: 12.5, color: 'var(--ink-3)' }}>
-                    Add and validate API keys in <strong style={{ color: 'var(--ink-2)' }}>API Keys</strong> tab to see available models here.
-                  </div>
-                </div>
-              ) : (
-                <Section title="Default Model" hint={`Models from ${Object.values(providers).filter(p => p?.valid).length} validated provider${Object.values(providers).filter(p => p?.valid).length === 1 ? '' : 's'}.`}>
-                  <select
-                    value={config.models?.default || 'claude-opus-4-5'}
-                    onChange={e => set('models.default', e.target.value)}
-                    style={{
-                      background: 'var(--surface-3)',
-                      border: '1px solid var(--line-1)',
-                      borderRadius: 8,
-                      color: 'var(--ink-1)',
-                      fontSize: 13, padding: '10px 12px',
-                      width: '100%', outline: 'none',
-                      fontFamily: 'var(--font-mono)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {Object.entries(providers).filter(([_, info]) => info?.valid).map(([pname, info]) => (
-                      <optgroup key={pname} label={pname.charAt(0).toUpperCase() + pname.slice(1)}>
-                        {info.models.map(m => (
-                          <option key={`${pname}:${m}`} value={m}>{m}</option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
-                </Section>
-              )}
-
-              {providers.nanoBanana?.valid && (
-                <Section title="Image Generation Model" hint="Used when the agent generates images.">
-                  <select
-                    value={config.models?.imageGen || providers.nanoBanana.models[0] || ''}
-                    onChange={e => set('models.imageGen', e.target.value)}
-                    style={{
-                      background: 'var(--surface-3)',
-                      border: '1px solid var(--line-1)',
-                      borderRadius: 8,
-                      color: 'var(--ink-1)',
-                      fontSize: 13, padding: '10px 12px',
-                      width: '100%', outline: 'none',
-                      fontFamily: 'var(--font-mono)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {providers.nanoBanana.models.map(m => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
-                </Section>
-              )}
 
               <Section title="Storage">
                 <p style={{ fontSize: 12, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', lineHeight: 1.6 }}>
