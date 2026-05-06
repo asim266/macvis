@@ -39,18 +39,18 @@ export function MessageBubble({ message, isStreaming }: Props) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
         <div
           style={{
-            width: 22,
-            height: 22,
-            borderRadius: 6,
-            background: 'linear-gradient(135deg, var(--accent) 0%, oklch(60% 0.15 30) 100%)',
+            width: 24,
+            height: 24,
+            borderRadius: 7,
+            background: 'linear-gradient(135deg, var(--accent-bright) 0%, oklch(54% 0.22 18) 100%)',
             display: 'grid',
             placeItems: 'center',
             fontSize: 11,
             fontWeight: 700,
-            color: 'oklch(15% 0 0)',
+            color: 'oklch(98% 0 0)',
             fontFamily: 'var(--font-mono)',
             letterSpacing: 0,
-            boxShadow: '0 1px 3px rgb(0 0 0 / 0.4), inset 0 1px 0 oklch(95% 0.05 55 / 0.3)',
+            boxShadow: '0 2px 6px var(--accent-glow), inset 0 1px 0 oklch(95% 0.05 25 / 0.4)',
           }}
         >
           M

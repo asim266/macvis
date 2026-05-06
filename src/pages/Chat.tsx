@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Plus, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { useChatStore } from '../stores/chatStore'
 import { useConfigStore } from '../stores/configStore'
 import { MessageBubble } from '../components/chat/MessageBubble'
@@ -9,12 +9,13 @@ const QUICK_PROMPTS = [
   'List my GitHub repos',
   'What changed in my Downloads today?',
   'Build a landing page for a SaaS',
+  'Summarize the news from this week',
 ]
 
 export function Chat() {
   const {
     sessions, activeSessionId, isStreaming, streamingMessageId,
-    createSession, setActiveSession,
+    createSession,
     addMessage, appendStream, addOrUpdateToolCall,
     setStreaming, setStreamingMessageId,
   } = useChatStore()
@@ -89,88 +90,66 @@ export function Chat() {
   const isEmpty = !activeSession?.messages.length
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Session tabs */}
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
+      {/* Drag region across the top */}
       <div
+        className="drag-region"
         style={{
-          height: 40,
-          borderBottom: '1px solid var(--line-1)',
-          background: 'var(--surface-1)',
+          height: 38,
+          flexShrink: 0,
+          background: 'var(--surface-2)',
+          borderBottom: isEmpty ? 'none' : '1px solid var(--line-1)',
           display: 'flex',
           alignItems: 'center',
-          gap: 4,
-          padding: '0 16px',
-          flexShrink: 0,
-          overflowX: 'auto',
+          padding: '0 24px',
+          fontSize: 12.5,
+          color: 'var(--ink-3)',
+          letterSpacing: '-0.005em',
+          fontWeight: 500,
         }}
       >
-        {sessions.map(session => (
-          <button
-            key={session.id}
-            onClick={() => setActiveSession(session.id)}
-            style={{
-              padding: '6px 12px',
-              borderRadius: 7,
-              border: '1px solid',
-              borderColor: session.id === activeSessionId ? 'var(--line-2)' : 'transparent',
-              background: session.id === activeSessionId ? 'var(--surface-3)' : 'transparent',
-              color: session.id === activeSessionId ? 'var(--ink-1)' : 'var(--ink-3)',
-              fontSize: 12,
-              fontWeight: 500,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              maxWidth: 180,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              transition: 'all 120ms var(--ease)',
-            }}
-          >
-            {session.title}
-          </button>
-        ))}
-        <button
-          onClick={createSession}
-          title="New chat ⌘N"
-          style={{
-            width: 24, height: 24, borderRadius: 6,
-            background: 'transparent', border: 'none', cursor: 'pointer',
-            color: 'var(--ink-3)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'all 120ms var(--ease)',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = 'var(--surface-3)'
-            e.currentTarget.style.color = 'var(--ink-1)'
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = 'transparent'
-            e.currentTarget.style.color = 'var(--ink-3)'
-          }}
-        >
-          <Plus size={14} />
-        </button>
+        {!isEmpty && (
+          <span style={{
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%',
+          }}>
+            {activeSession?.title || 'New chat'}
+          </span>
+        )}
       </div>
 
+      {/* Decorative red glow in background (only on empty state) */}
+      {isEmpty && (
+        <div
+          className="bg-glow"
+          style={{
+            top: '40%', left: '50%',
+            transform: 'translate(-50%, -50%)',
+            opacity: 0.25,
+          }}
+        />
+      )}
+
       {/* Messages or empty state */}
-      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
-        <div style={{ maxWidth: 760, margin: '0 auto', padding: '28px 32px', minHeight: '100%' }}>
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, position: 'relative', zIndex: 1 }}>
+        <div style={{ maxWidth: 760, margin: '0 auto', padding: '24px 32px', minHeight: '100%' }}>
           {noApiKey && (
             <div
               style={{
-                background: 'oklch(68% 0.18 22 / 0.08)',
-                border: '1px solid oklch(68% 0.18 22 / 0.4)',
+                background: 'var(--accent-soft)',
+                border: '1px solid var(--accent-line)',
                 borderRadius: 10,
                 padding: '12px 16px',
                 marginBottom: 20,
                 fontSize: 13,
-                color: 'var(--err)',
+                color: 'var(--accent-bright)',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               }}
+              className="fade-up"
             >
               <span>
                 No Anthropic API key. Open <strong style={{ fontWeight: 600 }}>Settings → API Keys</strong> to add one.
               </span>
-              <button onClick={() => setNoApiKey(false)} style={{ background: 'none', border: 'none', color: 'var(--err)', cursor: 'pointer', display: 'flex' }}>
+              <button onClick={() => setNoApiKey(false)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', display: 'flex' }}>
                 <X size={14} />
               </button>
             </div>
@@ -183,54 +162,74 @@ export function Chat() {
                 display: 'flex', flexDirection: 'column', alignItems: 'center',
                 justifyContent: 'center',
                 textAlign: 'center',
-                minHeight: 'calc(100vh - 160px)',
-                gap: 0,
+                minHeight: 'calc(100vh - 200px)',
               }}
             >
               <div
                 style={{
-                  width: 56, height: 56, borderRadius: 16,
-                  background: 'linear-gradient(135deg, var(--accent) 0%, oklch(58% 0.18 25) 100%)',
+                  width: 64, height: 64, borderRadius: 18,
+                  background: 'linear-gradient(135deg, var(--accent-bright) 0%, oklch(54% 0.22 18) 100%)',
                   display: 'grid', placeItems: 'center',
-                  fontSize: 26, fontWeight: 700,
-                  color: 'oklch(15% 0 0)',
+                  fontSize: 30, fontWeight: 700,
+                  color: 'oklch(98% 0 0)',
                   fontFamily: 'var(--font-mono)',
-                  boxShadow: '0 0 60px -10px var(--accent-line), inset 0 1px 0 oklch(95% 0.05 55 / 0.3)',
-                  marginBottom: 24,
+                  boxShadow: '0 0 80px -10px var(--accent-glow), 0 8px 24px oklch(0% 0 0 / 0.4), inset 0 1px 0 oklch(95% 0.05 25 / 0.4)',
+                  marginBottom: 22,
                 }}
               >
                 M
               </div>
-              <h1 style={{ fontSize: 24, fontWeight: 600, color: 'var(--ink-1)', letterSpacing: '-0.025em', marginBottom: 6 }}>
+              <h1 style={{
+                fontSize: 26,
+                fontWeight: 600,
+                color: 'var(--ink-1)',
+                letterSpacing: '-0.025em',
+                marginBottom: 8,
+              }}>
                 What can I do for you?
               </h1>
-              <p style={{ fontSize: 13, color: 'var(--ink-3)', maxWidth: 380, lineHeight: 1.6, marginBottom: 28 }}>
+              <p style={{
+                fontSize: 13.5,
+                color: 'var(--ink-3)',
+                maxWidth: 420,
+                lineHeight: 1.6,
+                marginBottom: 32,
+              }}>
                 Local-first AI with full Mac access. Ask me to write code, deploy a site, list files, draft emails — anything.
               </p>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 540 }}>
-                {QUICK_PROMPTS.map(p => (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                gap: 8,
+                width: '100%',
+                maxWidth: 560,
+              }}>
+                {QUICK_PROMPTS.map((p, i) => (
                   <button
                     key={p}
                     onClick={() => handleSend(p)}
                     style={{
-                      padding: '7px 13px',
-                      background: 'var(--surface-2)',
+                      padding: '10px 14px',
+                      background: 'var(--surface-3)',
                       border: '1px solid var(--line-1)',
-                      borderRadius: 999,
-                      fontSize: 12,
+                      borderRadius: 10,
+                      fontSize: 12.5,
                       color: 'var(--ink-2)',
                       cursor: 'pointer',
+                      textAlign: 'left',
+                      lineHeight: 1.4,
                       transition: 'all 150ms var(--ease)',
+                      animation: `fade-up 300ms ${100 + i * 50}ms var(--ease) both`,
                     }}
                     onMouseEnter={e => {
-                      e.currentTarget.style.borderColor = 'var(--line-2)'
+                      e.currentTarget.style.borderColor = 'var(--accent-line)'
                       e.currentTarget.style.color = 'var(--ink-1)'
-                      e.currentTarget.style.background = 'var(--surface-3)'
+                      e.currentTarget.style.background = 'var(--surface-4)'
                     }}
                     onMouseLeave={e => {
                       e.currentTarget.style.borderColor = 'var(--line-1)'
                       e.currentTarget.style.color = 'var(--ink-2)'
-                      e.currentTarget.style.background = 'var(--surface-2)'
+                      e.currentTarget.style.background = 'var(--surface-3)'
                     }}
                   >
                     {p}

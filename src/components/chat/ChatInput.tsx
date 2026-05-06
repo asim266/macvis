@@ -109,8 +109,8 @@ export function ChatInput({ onSend, onStop, isStreaming, disabled }: Props) {
             onClick={isStreaming ? onStop : send}
             disabled={!isStreaming && !canSend}
             style={{
-              width: 28,
-              height: 28,
+              width: 30,
+              height: 30,
               borderRadius: 8,
               border: 'none',
               background: isStreaming
@@ -118,15 +118,15 @@ export function ChatInput({ onSend, onStop, isStreaming, disabled }: Props) {
                 : canSend
                   ? 'var(--accent)'
                   : 'var(--surface-3)',
-              color: isStreaming || canSend ? 'oklch(15% 0 0)' : 'var(--ink-4)',
+              color: isStreaming || canSend ? 'oklch(98% 0 0)' : 'var(--ink-4)',
               cursor: isStreaming || canSend ? 'pointer' : 'default',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'background 120ms var(--ease)',
+              transition: 'all 120ms var(--ease)',
               boxShadow:
                 isStreaming || canSend
-                  ? 'inset 0 1px 0 0 oklch(95% 0.05 55 / 0.3), 0 1px 2px oklch(0% 0 0 / 0.3)'
+                  ? 'inset 0 1px 0 0 oklch(95% 0.05 25 / 0.35), 0 1px 3px oklch(0% 0 0 / 0.4), 0 0 12px var(--accent-glow)'
                   : 'none',
             }}
           >

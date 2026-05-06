@@ -198,15 +198,17 @@ function MCPCard({
           <button
             onClick={() => onToggle(name, !enabled)}
             style={{
-              padding: '5px 11px',
-              borderRadius: 6,
-              border: '1px solid var(--line-2)',
+              padding: '6px 13px',
+              borderRadius: 7,
+              border: '1px solid',
+              borderColor: enabled ? 'var(--line-2)' : 'var(--accent)',
               background: enabled ? 'var(--surface-3)' : 'var(--accent)',
-              color: enabled ? 'var(--ink-1)' : 'oklch(15% 0 0)',
+              color: enabled ? 'var(--ink-1)' : 'oklch(98% 0 0)',
               fontSize: 11.5, fontWeight: 600,
               cursor: 'pointer',
               letterSpacing: '-0.005em',
               transition: 'all 120ms var(--ease)',
+              boxShadow: enabled ? 'none' : 'inset 0 1px 0 oklch(95% 0.05 25 / 0.35), 0 0 12px var(--accent-glow)',
             }}
           >
             {enabled ? 'Disable' : 'Enable'}
@@ -258,23 +260,24 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
       <div
         onClick={() => onChange(!checked)}
         style={{
-          width: 34, height: 20, borderRadius: 999,
+          width: 36, height: 20, borderRadius: 999,
           background: checked ? 'var(--accent)' : 'var(--surface-3)',
           border: `1px solid ${checked ? 'var(--accent)' : 'var(--line-2)'}`,
           position: 'relative',
           cursor: 'pointer',
           transition: 'all 180ms var(--ease)',
           flexShrink: 0,
+          boxShadow: checked ? '0 0 12px var(--accent-glow)' : 'none',
         }}
       >
         <div
           style={{
             position: 'absolute',
             top: 1,
-            left: checked ? 15 : 1,
+            left: checked ? 17 : 1,
             width: 16, height: 16,
             borderRadius: 999,
-            background: checked ? 'oklch(15% 0 0)' : 'var(--ink-2)',
+            background: checked ? 'oklch(98% 0 0)' : 'var(--ink-2)',
             transition: 'left 180ms var(--ease)',
             boxShadow: '0 1px 2px rgb(0 0 0 / 0.4)',
           }}
@@ -353,14 +356,33 @@ export function Settings() {
   ]
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--surface-1)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--surface-2)' }}>
+      {/* Drag region top bar */}
+      <div
+        className="drag-region"
+        style={{
+          height: 38,
+          flexShrink: 0,
+          background: 'var(--surface-2)',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 24px',
+          fontSize: 12.5,
+          color: 'var(--ink-2)',
+          fontWeight: 500,
+          letterSpacing: '-0.005em',
+        }}
+      >
+        Settings
+      </div>
+
       {/* Tab bar */}
       <div
         style={{
           display: 'flex',
           padding: '0 24px',
           borderBottom: '1px solid var(--line-1)',
-          background: 'var(--surface-1)',
+          background: 'var(--surface-2)',
           flexShrink: 0,
           gap: 0,
         }}
