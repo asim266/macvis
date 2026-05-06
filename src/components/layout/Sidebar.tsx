@@ -1,4 +1,5 @@
-import { Plus, Settings as SettingsIcon, Plug, Sparkles, Globe, Send, MessageSquare, MoreHorizontal } from 'lucide-react'
+import { useState } from 'react'
+import { Plus, Settings as SettingsIcon, Plug, Sparkles, Folder, Send, MessageSquare, Trash2 } from 'lucide-react'
 import { useChatStore } from '../../stores/chatStore'
 import { useConfigStore } from '../../stores/configStore'
 import type { Page } from '../../App'
@@ -9,15 +10,16 @@ interface Props {
 }
 
 const NAV_ITEMS: { id: Page; icon: React.ReactNode; label: string }[] = [
+  { id: 'projects', icon: <Folder size={15} />, label: 'Projects' },
   { id: 'mcps', icon: <Plug size={15} />, label: 'Integrations' },
   { id: 'skills', icon: <Sparkles size={15} />, label: 'Skills' },
-  { id: 'webbuilder', icon: <Globe size={15} />, label: 'Web Builder' },
   { id: 'telegram', icon: <Send size={15} />, label: 'Telegram' },
 ]
 
 export function Sidebar({ currentPage, onNavigate }: Props) {
-  const { sessions, activeSessionId, createSession, setActiveSession } = useChatStore()
+  const { sessions, activeSessionId, createSession, setActiveSession, deleteSession } = useChatStore()
   const model = useConfigStore(s => s.config?.models?.default || 'claude-opus-4-5')
+  const [hoveredSession, setHoveredSession] = useState<string | null>(null)
 
   const goToChat = (sessionId: string) => {
     setActiveSession(sessionId)
@@ -137,49 +139,74 @@ export function Sidebar({ currentPage, onNavigate }: Props) {
           </div>
         )}
 
-        {sessions.slice().reverse().map(session => {
+        {sessions.map(session => {
           const active = currentPage === 'chat' && session.id === activeSessionId
+          const hovered = hoveredSession === session.id
           return (
-            <button
+            <div
               key={session.id}
-              onClick={() => goToChat(session.id)}
+              onMouseEnter={() => setHoveredSession(session.id)}
+              onMouseLeave={() => setHoveredSession(null)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 9,
-                width: '100%',
-                padding: '7px 10px',
+                display: 'flex', alignItems: 'center', gap: 4,
                 marginBottom: 1,
-                background: active ? 'var(--surface-3)' : 'transparent',
+                background: active ? 'var(--surface-3)' : hovered ? 'var(--surface-3)' : 'transparent',
                 border: '1px solid',
                 borderColor: active ? 'var(--line-2)' : 'transparent',
                 borderRadius: 7,
-                color: active ? 'var(--ink-1)' : 'var(--ink-2)',
-                fontSize: 12.5,
-                fontWeight: active ? 500 : 400,
-                cursor: 'pointer',
-                textAlign: 'left',
-                letterSpacing: '-0.005em',
                 transition: 'all 100ms var(--ease)',
               }}
-              onMouseEnter={e => {
-                if (!active) {
-                  e.currentTarget.style.background = 'var(--surface-3)'
-                  e.currentTarget.style.color = 'var(--ink-1)'
-                }
-              }}
-              onMouseLeave={e => {
-                if (!active) {
-                  e.currentTarget.style.background = 'transparent'
-                  e.currentTarget.style.color = 'var(--ink-2)'
-                }
-              }}
             >
-              <MessageSquare size={12} style={{ flexShrink: 0, color: active ? 'var(--accent-bright)' : 'var(--ink-4)' }} />
-              <span style={{
-                flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }}>
-                {session.title || 'New chat'}
-              </span>
-            </button>
+              <button
+                onClick={() => goToChat(session.id)}
+                style={{
+                  flex: 1,
+                  display: 'flex', alignItems: 'center', gap: 9,
+                  padding: '7px 10px',
+                  background: 'transparent',
+                  border: 'none',
+                  borderRadius: 7,
+                  color: active ? 'var(--ink-1)' : 'var(--ink-2)',
+                  fontSize: 12.5,
+                  fontWeight: active ? 500 : 400,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  letterSpacing: '-0.005em',
+                  minWidth: 0,
+                }}
+              >
+                <MessageSquare size={12} style={{ flexShrink: 0, color: active ? 'var(--accent-bright)' : 'var(--ink-4)' }} />
+                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {session.title || 'New chat'}
+                </span>
+              </button>
+              {hovered && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); deleteSession(session.id) }}
+                  title="Delete chat"
+                  style={{
+                    width: 22, height: 22, marginRight: 6,
+                    background: 'transparent', border: 'none',
+                    borderRadius: 4,
+                    color: 'var(--ink-3)',
+                    cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                    transition: 'all 100ms var(--ease)',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = 'oklch(68% 0.22 25 / 0.15)'
+                    e.currentTarget.style.color = 'var(--err)'
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'transparent'
+                    e.currentTarget.style.color = 'var(--ink-3)'
+                  }}
+                >
+                  <Trash2 size={11} />
+                </button>
+              )}
+            </div>
           )
         })}
       </div>

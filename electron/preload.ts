@@ -71,4 +71,21 @@ contextBridge.exposeInMainWorld('macvis', {
       ipcRenderer.invoke('provider:validate', { provider, key }),
     listAll: () => ipcRenderer.invoke('provider:listAll'),
   },
+
+  sessions: {
+    list: () => ipcRenderer.invoke('sessions:list'),
+    load: (id: string) => ipcRenderer.invoke('sessions:load', { id }),
+    delete: (id: string) => ipcRenderer.invoke('sessions:delete', { id }),
+    rename: (id: string, title: string) => ipcRenderer.invoke('sessions:rename', { id, title }),
+  },
+
+  projects: {
+    list: () => ipcRenderer.invoke('projects:list'),
+    openInFinder: (path: string) => ipcRenderer.invoke('projects:openInFinder', { path }),
+    openInEditor: (path: string) => ipcRenderer.invoke('projects:openInEditor', { path }),
+    openInBrowser: (path: string) => ipcRenderer.invoke('projects:openInBrowser', { path }),
+    run: (path: string) => ipcRenderer.invoke('projects:run', { path }),
+    delete: (path: string) => ipcRenderer.invoke('projects:delete', { path }),
+    workspaceDir: () => ipcRenderer.invoke('projects:workspaceDir'),
+  },
 })

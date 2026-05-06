@@ -2,6 +2,9 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { X } from 'lucide-react'
 import { useChatStore } from '../stores/chatStore'
 import { useConfigStore } from '../stores/configStore'
+
+// expose chat store globally for agent done events
+declare const window: any
 import { MessageBubble } from '../components/chat/MessageBubble'
 import { ChatInput } from '../components/chat/ChatInput'
 
@@ -21,13 +24,17 @@ export function Chat() {
   } = useChatStore()
 
   const { load, loaded } = useConfigStore()
+  const sessionsLoaded = useChatStore(s => s.sessionsLoaded)
   const bottomRef = useRef<HTMLDivElement>(null)
   const [noApiKey, setNoApiKey] = useState(false)
 
   const activeSession = sessions.find(s => s.id === activeSessionId)
 
   useEffect(() => { if (!loaded) load() }, [loaded, load])
-  useEffect(() => { if (sessions.length === 0) createSession() }, [sessions.length, createSession])
+  // Only create a session after persistence has loaded AND there are zero sessions
+  useEffect(() => {
+    if (sessionsLoaded && sessions.length === 0) createSession()
+  }, [sessionsLoaded, sessions.length, createSession])
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [activeSession?.messages.length, activeSession?.messages[activeSession.messages.length - 1]?.content])
@@ -58,6 +65,7 @@ export function Chat() {
     unsubs.push(window.macvis.agent.onToolCall((data: any) => {
       if (data.sessionId === activeSessionId) {
         addOrUpdateToolCall(activeSessionId, assistantId, {
+          id: data.id,
           name: data.name, input: data.input, result: data.result, status: data.status,
         })
       }
@@ -67,6 +75,9 @@ export function Chat() {
       if (data.sessionId === activeSessionId) {
         setStreaming(false)
         setStreamingMessageId(null)
+        if (data.title) {
+          useChatStore.getState().updateSessionTitle(activeSessionId, data.title)
+        }
         unsubs.forEach(u => u())
       }
     }))
