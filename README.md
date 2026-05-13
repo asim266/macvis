@@ -221,19 +221,34 @@ MacVis is for the case where you want a **standalone desktop agent** with multi-
 
 ## Contributing
 
-PRs welcome. The code is organized phase-by-phase — pick something off the roadmap or open an issue first to discuss bigger changes.
+**MacVis is built in the open — contributors of every level are welcome.**
 
+You don't need to be a TypeScript/Electron expert to help. Here are the easiest ways to start:
+
+### 🐛 Find and report bugs
+The agent has access to bash, files, MCP servers, and Telegram — there are many ways to break it. Try unusual inputs, edge cases, low-bandwidth scenarios. **Open an issue with a repro and screenshot** — that alone is a huge help. See [Finding bugs](CONTRIBUTING.md#finding-bugs) for ideas.
+
+### ✨ Pick up an issue
+- **[Good first issues →](https://github.com/asim266/macvis/labels/good%20first%20issue)** — small, scoped, well-defined
+- **[Help wanted →](https://github.com/asim266/macvis/labels/help%20wanted)** — bigger items that need extra hands
+- **[All open issues →](https://github.com/asim266/macvis/issues)** — pick anything that looks fun
+
+### 🚀 Build something new
+- Add a new **MCP integration** — almost mechanical, 5 minutes per provider. See [CONTRIBUTING.md → Adding a new MCP integration](CONTRIBUTING.md#adding-a-new-mcp-integration).
+- Add a new **chat provider** — the `ChatProvider` interface normalizes everything.
+- Build out a **roadmap phase** (skills loader, auto-updater, image gen, …).
+
+### Dev commands
 ```bash
-pnpm dev          # run in dev mode (Electron + Vite HMR)
-pnpm typecheck    # tsc --noEmit
-pnpm build        # build a .dmg (macOS only)
+pnpm install
+pnpm dev          # Electron + Vite HMR
+pnpm typecheck    # tsc --noEmit (run before pushing)
+pnpm build        # produces dist/MacVis-{ver}-{arch}.dmg for both architectures
 ```
 
-Good first issues:
-- Wire up the MCP manager so GitHub/Vercel/etc. actually do work (Phase 4)
-- Add image generation via Nano Banana / Gemini 2.5 Flash Image
-- Write a skill pack (Phase 6 spec)
-- Add screenshot tests with Playwright
+Full guide: **[CONTRIBUTING.md](CONTRIBUTING.md)**
+
+By contributing, you agree your contributions are licensed under [MIT](LICENSE).
 
 ## Disclaimer
 
