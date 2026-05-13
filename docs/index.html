@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>MacVis — Local-first AI agent for macOS · GitHub: asim266/macvis</title>
+  <meta name="description" content="MacVis is a free, open-source AI assistant for macOS. Multi-provider (Anthropic Claude, OpenAI GPT, Gemini, OpenRouter, Groq, Ollama) with bring-your-own-key. Full Mac access — bash, filesystem, web search, MCP integrations, Telegram remote. Local-first, no backend, no telemetry." />
+  <meta name="keywords" content="MacVis, macvis, mac vis, AI assistant Mac, Claude desktop Mac alternative, local AI agent macOS, MCP client Mac, BYOK AI app, open source AI assistant, Electron AI app, agentic AI Mac, Anthropic Claude desktop, GPT desktop Mac, Ollama desktop, OpenRouter desktop client, local-first AI, no telemetry AI app, MCP integration, agent with bash access" />
+  <meta name="author" content="Muhammad Asim (asim266)" />
+  <link rel="canonical" href="https://asim266.github.io/macvis/" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="MacVis — Local-first AI agent for macOS" />
+  <meta property="og:description" content="Open-source AI assistant for Mac with full system access. Bring your own keys (Claude, GPT, Gemini, Ollama). MCP integrations. No backend." />
+  <meta property="og:url" content="https://asim266.github.io/macvis/" />
+  <meta property="og:image" content="https://raw.githubusercontent.com/asim266/macvis/main/docs/screenshots/01-empty-chat.png" />
+  <meta property="og:site_name" content="MacVis" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="MacVis — Local-first AI agent for macOS" />
+  <meta name="twitter:description" content="Open-source. Multi-provider. Full Mac access. BYOK. No telemetry." />
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/asim266/macvis/main/docs/screenshots/01-empty-chat.png" />
+
+  <!-- JSON-LD structured data — helps Google understand this is a software product -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "MacVis",
+    "alternateName": ["MacVis app", "MacVis AI", "asim266/macvis"],
+    "applicationCategory": "ProductivityApplication",
+    "operatingSystem": "macOS 13+",
+    "description": "Local-first, fully-agentic AI assistant for macOS. Multi-provider (Anthropic, OpenAI, OpenRouter, Google Gemini, Groq, Ollama), MCP integrations, Telegram remote, persistent memory.",
+    "url": "https://asim266.github.io/macvis/",
+    "downloadUrl": "https://github.com/asim266/macvis/releases/latest",
+    "softwareVersion": "0.1.0",
+    "license": "https://github.com/asim266/macvis/blob/main/LICENSE",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "author": {
+      "@type": "Person",
+      "name": "Muhammad Asim",
+      "url": "https://github.com/asim266"
+    },
+    "softwareHelp": "https://github.com/asim266/macvis#readme",
+    "screenshot": "https://raw.githubusercontent.com/asim266/macvis/main/docs/screenshots/01-empty-chat.png"
+  }
+  </script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: oklch(13% 0.015 150);
+      --surface: oklch(20% 0.015 150);
+      --surface-2: oklch(24% 0.018 150);
+      --line: oklch(28% 0.02 150);
+      --ink-1: oklch(96% 0.01 150);
+      --ink-2: oklch(78% 0.018 150);
+      --ink-3: oklch(60% 0.022 150);
+      --accent: oklch(64% 0.17 150);
+      --accent-bright: oklch(72% 0.19 148);
+    }
+    html, body {
+      background: var(--bg); color: var(--ink-1);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 16px; line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    body { padding: 48px 24px 96px; }
+    main { max-width: 820px; margin: 0 auto; }
+    a { color: var(--accent-bright); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color .15s; }
+    a:hover { border-bottom-color: var(--accent-bright); }
+    .logo {
+      width: 64px; height: 64px; border-radius: 16px;
+      background: linear-gradient(135deg, var(--accent), oklch(54% 0.22 150));
+      display: grid; place-items: center;
+      font-family: ui-monospace, "SF Mono", monospace;
+      font-size: 30px; font-weight: 700; color: white;
+      box-shadow: 0 0 60px -8px oklch(64% 0.17 150 / 0.6);
+      margin-bottom: 32px;
+    }
+    h1 {
+      font-size: 56px; line-height: 1.05; letter-spacing: -0.035em;
+      font-weight: 700; margin-bottom: 16px;
+    }
+    h1 .accent { color: var(--accent-bright); }
+    .lead { font-size: 21px; color: var(--ink-2); line-height: 1.5; max-width: 660px; margin-bottom: 36px; }
+    .cta-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 64px; }
+    .btn {
+      padding: 14px 22px; border-radius: 10px;
+      font-weight: 600; font-size: 15px;
+      display: inline-flex; align-items: center; gap: 8px;
+      border: 1px solid var(--line); transition: all .15s;
+    }
+    .btn-primary { background: var(--accent); color: oklch(15% 0 0); border-color: var(--accent); box-shadow: 0 0 24px -4px oklch(64% 0.17 150 / 0.5); }
+    .btn-primary:hover { background: var(--accent-bright); border-color: var(--accent-bright); border-bottom-color: var(--accent-bright); }
+    .btn-secondary { background: var(--surface); color: var(--ink-1); }
+    .btn-secondary:hover { background: var(--surface-2); border-bottom-color: var(--line); }
+    section { margin-bottom: 56px; }
+    section h2 {
+      font-size: 28px; letter-spacing: -0.02em;
+      font-weight: 600; margin-bottom: 16px;
+    }
+    p, li { color: var(--ink-2); }
+    ul { list-style: none; }
+    li { padding: 10px 0; border-bottom: 1px solid var(--line); display: flex; gap: 12px; }
+    li::before { content: "✓"; color: var(--accent-bright); font-weight: 700; flex-shrink: 0; }
+    li strong { color: var(--ink-1); }
+    .grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px; margin-top: 24px;
+    }
+    .card {
+      background: var(--surface); border: 1px solid var(--line);
+      border-radius: 12px; padding: 20px;
+    }
+    .card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; color: var(--ink-1); }
+    .card p { font-size: 14px; line-height: 1.55; }
+    .screenshot { width: 100%; border-radius: 14px; border: 1px solid var(--line); margin-top: 16px; display: block; }
+    .faq { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px 20px; }
+    .faq details { padding: 18px 0; border-bottom: 1px solid var(--line); }
+    .faq details:last-child { border-bottom: none; }
+    .faq summary { font-weight: 600; cursor: pointer; font-size: 16px; color: var(--ink-1); list-style: none; display: flex; justify-content: space-between; align-items: center; }
+    .faq summary::after { content: "+"; font-weight: 400; font-size: 22px; color: var(--ink-3); }
+    .faq details[open] summary::after { content: "−"; }
+    .faq p { margin-top: 12px; line-height: 1.6; }
+    footer { margin-top: 96px; padding-top: 32px; border-top: 1px solid var(--line); color: var(--ink-3); font-size: 14px; }
+    code { background: var(--surface-2); padding: 2px 6px; border-radius: 4px; font-family: ui-monospace, "SF Mono", monospace; font-size: 13px; color: var(--accent-bright); }
+    .pill {
+      display: inline-block; padding: 2px 10px; border-radius: 999px;
+      background: var(--surface); border: 1px solid var(--line);
+      font-size: 12px; color: var(--ink-3); margin-right: 6px; margin-bottom: 6px;
+    }
+    @media (max-width: 600px) {
+      h1 { font-size: 40px; }
+      .lead { font-size: 18px; }
+      body { padding: 32px 18px 64px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <div class="logo" aria-label="MacVis logomark">M</div>
+
+  <h1><span class="accent">MacVis</span> — the local-first AI agent for macOS.</h1>
+  <p class="lead">
+    Open-source desktop AI assistant for your Mac. Bring your own keys for
+    <strong>Anthropic Claude</strong>, <strong>OpenAI GPT</strong>, <strong>Google Gemini</strong>,
+    <strong>OpenRouter</strong>, <strong>Groq</strong>, or <strong>Ollama</strong>.
+    Full Mac access — bash, filesystem, web search, MCP integrations, and a Telegram remote.
+    No backend. No telemetry. No subscription.
+  </p>
+
+  <div class="cta-row">
+    <a class="btn btn-primary" href="https://github.com/asim266/macvis/releases/latest">⬇ Download for Mac</a>
+    <a class="btn btn-secondary" href="https://github.com/asim266/macvis">★ View on GitHub</a>
+  </div>
+
+  <section>
+    <h2>What is MacVis?</h2>
+    <p>
+      MacVis is a native macOS desktop app that runs the same kind of agentic loop you get from
+      <a href="https://github.com/asim266/macvis">Claude Desktop or ChatGPT for Mac</a> — but the
+      agent lives entirely on your machine, you choose the model, and every chat, project, and API key stays local.
+    </p>
+    <p style="margin-top: 12px">
+      Built for developers and power-users who want a real agent to drive their environment without
+      sending their workspace to a third party.
+    </p>
+    <img class="screenshot" alt="MacVis empty chat — bold logomark and quick-prompt chips"
+         src="https://raw.githubusercontent.com/asim266/macvis/main/docs/screenshots/01-empty-chat.png" />
+  </section>
+
+  <section>
+    <h2>Highlights</h2>
+    <ul>
+      <li><span><strong>Multi-provider with automatic fallback</strong> — pick a primary, secondary, and tertiary model. If one rate-limits, MacVis silently switches to the next.</span></li>
+      <li><span><strong>Bring-your-own-key (BYOK)</strong> — Anthropic, OpenAI, OpenRouter, Gemini, Groq, Ollama. One-click <code>Test</code> button validates each key and fetches the actual model list you can use.</span></li>
+      <li><span><strong>Persistent memory</strong> — every chat saved to <code>~/.macvis/sessions/</code>. Reopen the app, your history is there. The agent remembers what it created in prior turns.</span></li>
+      <li><span><strong>Projects view</strong> — every code project the agent creates appears in a dedicated page with one-click Open in Browser / Editor / Finder + Run.</span></li>
+      <li><span><strong>19 built-in MCP integrations</strong> — GitHub, Vercel, Supabase, Railway, Slack, Stripe, Notion, Linear, Postgres, and more — plus a Custom MCP form for anything.</span></li>
+      <li><span><strong>Telegram remote</strong> — single-user-gated bot. Message your bot from your phone, the agent runs on your Mac, the conversation shows up as a chat in MacVis.</span></li>
+      <li><span><strong>No backend, no telemetry</strong> — all data flows directly between your Mac and the providers you configured. Open the network tab and verify.</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Compare</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>vs Claude Desktop</h3>
+        <p>Claude Desktop is Anthropic-only with no agent loop. MacVis routes to any provider, has full tool-use, persistent memory, MCP support, and a Projects view.</p>
+      </div>
+      <div class="card">
+        <h3>vs ChatGPT for Mac</h3>
+        <p>ChatGPT for Mac is closed-source and OpenAI-only. MacVis is open-source, local-first, multi-provider, and gives the agent real access to your machine.</p>
+      </div>
+      <div class="card">
+        <h3>vs Open WebUI</h3>
+        <p>Open WebUI runs in a browser tab and focuses on Ollama. MacVis is a native desktop agent built around tool-use and MCP, not just chat.</p>
+      </div>
+      <div class="card">
+        <h3>vs Cursor / Continue</h3>
+        <p>Those are agent surfaces inside your editor. MacVis is a standalone desktop agent — it can run bash, deploy to Vercel, message Slack — not just edit code.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Frequently asked questions</h2>
+    <div class="faq">
+      <details open>
+        <summary>Is MacVis free?</summary>
+        <p>Yes. The app is MIT-licensed and free to download. You pay only the providers you choose to use (Anthropic, OpenAI, etc.). Ollama and local Llama models work too — no provider cost at all.</p>
+      </details>
+      <details>
+        <summary>Is there a Claude Desktop alternative for Mac that supports MCP?</summary>
+        <p>Yes — MacVis. It supports Anthropic's MCP (Model Context Protocol) with 19 built-in integrations including GitHub, Vercel, Supabase, Slack, Stripe, Notion, and Linear, plus a Custom MCP form for any other server.</p>
+      </details>
+      <details>
+        <summary>Can I run an AI agent locally on my Mac?</summary>
+        <p>Yes. MacVis runs entirely on your Mac. Combined with <a href="https://ollama.com">Ollama</a>, you get a fully-local agent loop — no internet required and no API keys.</p>
+      </details>
+      <details>
+        <summary>Does MacVis send my data anywhere?</summary>
+        <p>No. There's no backend. API calls go directly from your Mac to whichever providers you configured. All conversations are stored as JSON files in <code>~/.macvis/sessions/</code> on your machine.</p>
+      </details>
+      <details>
+        <summary>What models does MacVis support?</summary>
+        <p>Any model from these providers: Anthropic Claude (Opus / Sonnet / Haiku), OpenAI (GPT-4o, GPT-5, o-series), Google Gemini (2.5 Pro / Flash), OpenRouter (200+ models), Groq (Llama / Mixtral), and Ollama (any local model).</p>
+      </details>
+      <details>
+        <summary>Is MacVis open source?</summary>
+        <p>Yes — <a href="https://github.com/asim266/macvis">github.com/asim266/macvis</a>, MIT-licensed. Contributions welcome — see <a href="https://github.com/asim266/macvis/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a> or pick up a <a href="https://github.com/asim266/macvis/labels/good%20first%20issue">good first issue</a>.</p>
+      </details>
+      <details>
+        <summary>How is MacVis different from Claude Code, Cursor, or Continue?</summary>
+        <p>Those are agent surfaces embedded in your editor. MacVis is a standalone desktop assistant — separate from your IDE, can drive bash / Finder / Mail / any MCP-connected service, and has its own persistent memory.</p>
+      </details>
+      <details>
+        <summary>Is it signed and notarized?</summary>
+        <p>Not yet. On first launch you'll need to right-click → Open or run <code>xattr -d com.apple.quarantine /Applications/MacVis.app</code>. Code-signing is on the roadmap — <a href="https://github.com/asim266/macvis/issues/2">issue #2</a>.</p>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2>Tech stack</h2>
+    <div>
+      <span class="pill">Electron 41</span>
+      <span class="pill">React 18</span>
+      <span class="pill">TypeScript</span>
+      <span class="pill">Vite + electron-vite</span>
+      <span class="pill">Tailwind v4</span>
+      <span class="pill">Zustand</span>
+      <span class="pill">@anthropic-ai/sdk</span>
+      <span class="pill">openai SDK</span>
+      <span class="pill">@google/generative-ai</span>
+      <span class="pill">@modelcontextprotocol/sdk</span>
+      <span class="pill">Telegraf</span>
+      <span class="pill">conf</span>
+      <span class="pill">pnpm</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Get started</h2>
+    <p>
+      <a class="btn btn-primary" href="https://github.com/asim266/macvis/releases/latest">⬇ Download the latest .dmg</a>
+      <a class="btn btn-secondary" href="https://github.com/asim266/macvis#quick-start" style="margin-left: 8px">Or run from source</a>
+    </p>
+  </section>
+
+  <footer>
+    <p>
+      MacVis is open-source software provided "AS IS". You are responsible for everything the agent
+      does on your machine. <a href="https://github.com/asim266/macvis#disclaimer">Full disclaimer</a> ·
+      <a href="https://github.com/asim266/macvis/blob/main/LICENSE">MIT License</a> ·
+      Built by <a href="https://github.com/asim266">@asim266</a>
+    </p>
+  </footer>
+</main>
+</body>
+</html>
