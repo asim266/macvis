@@ -2,32 +2,32 @@
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
 
 :root {
-  /* Surfaces — warm red-tinted grays, not pure black */
-  --surface-0:  oklch(13% 0.012 25);
-  --surface-1:  oklch(17% 0.014 25);    /* sidebar */
-  --surface-2:  oklch(20% 0.015 25);    /* main background */
-  --surface-3:  oklch(24% 0.018 25);    /* cards, inputs */
-  --surface-4:  oklch(29% 0.022 25);    /* hover */
-  --surface-5:  oklch(35% 0.026 25);    /* tooltips, dropdowns */
+  /* Surfaces — cool green-tinted grays, not pure black */
+  --surface-0:  oklch(13% 0.012 150);
+  --surface-1:  oklch(17% 0.014 150);    /* sidebar */
+  --surface-2:  oklch(20% 0.015 150);    /* main background */
+  --surface-3:  oklch(24% 0.018 150);    /* cards, inputs */
+  --surface-4:  oklch(29% 0.022 150);    /* hover */
+  --surface-5:  oklch(35% 0.026 150);    /* tooltips, dropdowns */
 
   /* Borders */
-  --line-1:     oklch(26% 0.02 25);
-  --line-2:     oklch(34% 0.025 25);
-  --line-3:     oklch(46% 0.04 25);
+  --line-1:     oklch(26% 0.02 150);
+  --line-2:     oklch(34% 0.025 150);
+  --line-3:     oklch(46% 0.04 150);
 
   /* Text — 4-step hierarchy */
-  --ink-1:      oklch(96% 0.01 25);
-  --ink-2:      oklch(78% 0.018 25);
-  --ink-3:      oklch(60% 0.022 25);
-  --ink-4:      oklch(45% 0.025 25);
+  --ink-1:      oklch(96% 0.01 150);
+  --ink-2:      oklch(78% 0.018 150);
+  --ink-3:      oklch(60% 0.022 150);
+  --ink-4:      oklch(45% 0.025 150);
 
-  /* Accent — bold red */
-  --accent:        oklch(64% 0.22 25);
-  --accent-hover:  oklch(70% 0.22 25);
-  --accent-bright: oklch(72% 0.24 28);
-  --accent-soft:   oklch(64% 0.22 25 / 0.16);
-  --accent-line:   oklch(64% 0.22 25 / 0.45);
-  --accent-glow:   oklch(64% 0.22 25 / 0.55);
+  /* Accent — vibrant emerald green */
+  --accent:        oklch(64% 0.17 150);
+  --accent-hover:  oklch(70% 0.17 150);
+  --accent-bright: oklch(72% 0.19 148);
+  --accent-soft:   oklch(64% 0.17 150 / 0.16);
+  --accent-line:   oklch(64% 0.17 150 / 0.45);
+  --accent-glow:   oklch(64% 0.17 150 / 0.55);
 
   /* Status */
   --ok:        oklch(72% 0.155 150);

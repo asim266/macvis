@@ -50,12 +50,12 @@ export function Sidebar({ currentPage, onNavigate }: Props) {
         <div
           style={{
             width: 26, height: 26, borderRadius: 7,
-            background: 'linear-gradient(135deg, var(--accent-bright) 0%, oklch(54% 0.22 18) 100%)',
+            background: 'linear-gradient(135deg, var(--accent-bright) 0%, oklch(54% 0.22 150) 100%)',
             display: 'grid', placeItems: 'center',
             fontSize: 12, fontWeight: 700,
             color: 'oklch(98% 0 0)',
             fontFamily: 'var(--font-mono)',
-            boxShadow: '0 2px 8px var(--accent-glow), inset 0 1px 0 oklch(95% 0.05 25 / 0.4)',
+            boxShadow: '0 2px 8px var(--accent-glow), inset 0 1px 0 oklch(95% 0.05 150 / 0.4)',
           }}
         >
           M
@@ -90,7 +90,7 @@ export function Sidebar({ currentPage, onNavigate }: Props) {
             cursor: 'pointer',
             letterSpacing: '-0.005em',
             transition: 'all 120ms var(--ease)',
-            boxShadow: 'inset 0 1px 0 oklch(95% 0.05 25 / 0.3), 0 1px 3px oklch(0% 0 0 / 0.4), 0 0 16px var(--accent-glow)',
+            boxShadow: 'inset 0 1px 0 oklch(95% 0.05 150 / 0.3), 0 1px 3px oklch(0% 0 0 / 0.4), 0 0 16px var(--accent-glow)',
           }}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent-hover)' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent)' }}

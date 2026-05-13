@@ -75,15 +75,12 @@ export const MCP_REGISTRY: MCPServerDef[] = [
     featured: true,
     brandColor: 'oklch(95% 0.005 0)',
     icon: '▲',
+    // Vercel ships a hosted MCP at mcp.vercel.com (HTTP+OAuth).
+    // mcp-remote bridges it to stdio so we can speak to it like a local server.
     command: 'npx',
-    args: ['-y', '@vercel/mcp-adapter'],
-    env: { VERCEL_TOKEN: 'mcps.vercel.token' },
-    inputs: [{
-      label: 'Access Token',
-      configKey: 'mcps.vercel.token',
-      type: 'password',
-    }],
-    docsUrl: 'https://vercel.com/account/tokens',
+    args: ['-y', 'mcp-remote', 'https://mcp.vercel.com'],
+    setupHint: 'Vercel uses OAuth — a browser window opens on first connect to sign in. No token needed in this field.',
+    docsUrl: 'https://vercel.com/docs/mcp',
   },
   {
     id: 'cloudflare',

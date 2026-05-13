@@ -220,6 +220,21 @@ function FeaturedCard({
         </div>
       </div>
 
+      {/* Setup hint (shown when no inputs are needed, e.g. OAuth-based MCPs) */}
+      {def.setupHint && !def.inputs?.length && (
+        <div style={{
+          padding: '10px 12px',
+          background: 'var(--surface-3)',
+          border: '1px solid var(--line-1)',
+          borderRadius: 7,
+          fontSize: 11.5,
+          color: 'var(--ink-2)',
+          lineHeight: 1.5,
+        }}>
+          💡 {def.setupHint}
+        </div>
+      )}
+
       {/* Inline inputs — first input shows the "Get token" link */}
       {def.inputs?.map((input, i) => (
         <InlineInput
@@ -265,7 +280,7 @@ function FeaturedCard({
           opacity: (!connected && !inputsFilled && (def.inputs?.length || 0) > 0) ? 0.45 : 1,
           letterSpacing: '-0.005em',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          boxShadow: connected ? 'none' : 'inset 0 1px 0 oklch(95% 0.05 25 / 0.3), 0 0 14px var(--accent-glow)',
+          boxShadow: connected ? 'none' : 'inset 0 1px 0 oklch(95% 0.05 150 / 0.3), 0 0 14px var(--accent-glow)',
           transition: 'all 120ms var(--ease)',
         }}
       >
@@ -374,7 +389,7 @@ function MCPCard({
                 letterSpacing: '-0.005em',
                 display: 'flex', alignItems: 'center', gap: 5,
                 minWidth: 90, justifyContent: 'center',
-                boxShadow: connected ? 'none' : 'inset 0 1px 0 oklch(95% 0.05 25 / 0.3), 0 0 10px var(--accent-glow)',
+                boxShadow: connected ? 'none' : 'inset 0 1px 0 oklch(95% 0.05 150 / 0.3), 0 0 10px var(--accent-glow)',
               }}
             >
               {connecting && <Loader size={11} className="spin" />}
@@ -620,7 +635,7 @@ function CustomMCPModal({ onClose, onInstall }: { onClose: () => void; onInstall
               color: 'oklch(98% 0 0)', fontSize: 12.5, fontWeight: 600,
               cursor: busy ? 'wait' : 'pointer',
               display: 'flex', alignItems: 'center', gap: 6,
-              boxShadow: 'inset 0 1px 0 oklch(95% 0.05 25 / 0.3), 0 0 12px var(--accent-glow)',
+              boxShadow: 'inset 0 1px 0 oklch(95% 0.05 150 / 0.3), 0 0 12px var(--accent-glow)',
             }}
           >
             {busy && <Loader size={11} className="spin" />}

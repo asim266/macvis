@@ -154,10 +154,11 @@ export class MCPManager {
         { capabilities: {} }
       )
 
-      // Add a generous timeout so a hanging MCP doesn't lock us up forever
+      // Add a generous timeout so a hanging MCP doesn't lock us up forever.
+      // 60s is enough for OAuth flows (Vercel, Linear) where a browser opens.
       const connectPromise = client.connect(transport)
       const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Connection timed out (30s)')), 30_000)
+        setTimeout(() => reject(new Error('Connection timed out after 60s. If this is an OAuth-based MCP, complete the sign-in in your browser then click Connect again.')), 60_000)
       )
       await Promise.race([connectPromise, timeout])
 

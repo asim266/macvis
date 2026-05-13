@@ -544,7 +544,7 @@ function TelegramControls() {
             cursor: busy ? 'wait' : 'pointer',
             display: 'flex', alignItems: 'center', gap: 6,
             letterSpacing: '-0.005em',
-            boxShadow: running ? 'none' : 'inset 0 1px 0 oklch(95% 0.05 25 / 0.3), 0 0 12px var(--accent-glow)',
+            boxShadow: running ? 'none' : 'inset 0 1px 0 oklch(95% 0.05 150 / 0.3), 0 0 12px var(--accent-glow)',
           }}
         >
           {busy ? <Loader size={11} className="spin" /> :
