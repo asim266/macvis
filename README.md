@@ -15,6 +15,18 @@ Bring-your-own-key. Multi-provider. No backend. No telemetry. Full Mac access.
 
 > *Like Claude Desktop or ChatGPT for Mac — but you own the agent, your data, and the model choice.*
 
+## Download
+
+<div align="center">
+
+**[⬇ Download the latest .dmg](https://github.com/asim266/macvis/releases/latest)**
+
+</div>
+
+The app is not code-signed yet, so on first launch macOS will warn you. Right-click the app → **Open** → **Open Anyway**. (Or run `xattr -d com.apple.quarantine /Applications/MacVis.app` once.)
+
+Prefer to build from source? See [Quick Start](#quick-start) below.
+
 ---
 
 ## What is MacVis?
@@ -37,23 +49,29 @@ Built for developers who want a real agent to drive their environment, without s
 
 ## Screenshots
 
-<!--
-Place screenshots in docs/screenshots/ and they will render here.
--->
-
 <div align="center">
 
-<img src="docs/screenshots/01-chat.png" alt="MacVis Chat" width="800" />
+<img src="docs/screenshots/01-empty-chat.png" alt="MacVis empty chat with quick-prompt chips" width="820" />
 
-*Agent creating a project — tool calls render inline as terminal-style cards*
+*The empty chat — bold logomark, quick-prompt chips, and the agent ready to act.*
 
-<img src="docs/screenshots/02-projects.png" alt="Projects" width="800" />
+<br/><br/>
 
-*Every project the agent creates appears here with one-click run, open, and delete*
+<img src="docs/screenshots/02-chat-in-action.png" alt="Agent creating a SaaS landing page" width="820" />
 
-<img src="docs/screenshots/03-settings.png" alt="Chat API Keys Settings" width="800" />
+*Tool calls render inline as terminal-style cards. Here the agent builds a SaaS landing page end-to-end, writing the HTML/CSS/JS itself.*
 
-*Multi-provider settings — add keys, test them, pick a model, build a fallback chain*
+<br/><br/>
+
+<img src="docs/screenshots/03-settings-fallback-chain.png" alt="Settings with fallback chain and validated providers" width="820" />
+
+*Chat API Keys — Anthropic primary + Gemini secondary fallback chain. Click* ***Test*** *and MacVis pulls the real model list from each provider.*
+
+<br/><br/>
+
+<img src="docs/screenshots/04-mcp-integrations.png" alt="MCP Integrations Quick Connect" width="820" />
+
+*MCP Integrations — Quick Connect cards for GitHub / Vercel / Railway / Supabase, plus a catalog of 18 more (Cloudflare, Postgres, Slack, Linear, Notion, Stripe, …) and a Custom MCP option for anything else.*
 
 </div>
 
@@ -216,6 +234,22 @@ Good first issues:
 - Add image generation via Nano Banana / Gemini 2.5 Flash Image
 - Write a skill pack (Phase 6 spec)
 - Add screenshot tests with Playwright
+
+## Disclaimer
+
+**MacVis is open-source software provided "AS IS", without warranty of any kind.**
+
+The agent has **full access to your Mac** — bash, filesystem, network, and any platforms you connect via MCP. You are giving an LLM the ability to run commands, modify files, deploy code, send messages, and spend money. **Treat it accordingly:**
+
+- **You are responsible** for every action MacVis takes on your machine. Review tool calls before they execute, especially `bash` and anything that touches money or production systems.
+- **The author(s) and contributors of MacVis are not liable** for any loss, damage, data corruption, unintended deployments, accidental expenses, deleted files, leaked credentials, or any other consequence — direct, indirect, incidental, or otherwise — arising from your use of this software.
+- **You bring your own keys.** Any charges you incur on Anthropic, OpenAI, OpenRouter, Vercel, Stripe, etc. are entirely your responsibility.
+- **MCP servers run as child processes** with your environment. Only connect MCPs you trust.
+- **No security audit** has been performed. Do not use MacVis for handling regulated data (PHI, PII, financial, etc.) without your own review.
+
+If you don't accept those terms, **don't run the software.** By installing or using MacVis, you accept full responsibility for its behavior on your machine.
+
+See the [LICENSE](LICENSE) for the full MIT terms including the formal disclaimer of warranty and limitation of liability.
 
 ## License
 

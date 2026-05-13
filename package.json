@@ -2,6 +2,16 @@
   "name": "macvis",
   "version": "0.1.0",
   "description": "Local-first agentic AI assistant for macOS",
+  "author": {
+    "name": "Muhammad Asim",
+    "url": "https://github.com/asim266"
+  },
+  "homepage": "https://github.com/asim266/macvis",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/asim266/macvis.git"
+  },
+  "license": "MIT",
   "main": "out/main/main.js",
   "scripts": {
     "dev": "electron-vite dev --config electron-vite.config.ts",
@@ -19,7 +29,6 @@
     "@tailwindcss/vite": "^4.2.4",
     "@vitejs/plugin-react": "^6.0.1",
     "conf": "^15.1.0",
-    "electron": "^41.5.0",
     "electron-vite": "^5.0.0",
     "highlight.js": "^11.11.1",
     "lucide-react": "^1.14.0",
@@ -39,6 +48,7 @@
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "electron": "^41.5.2",
     "electron-builder": "^26.8.1",
     "typescript": "^6.0.3",
     "vite": "^8.0.10"
