@@ -45,10 +45,13 @@ contextBridge.exposeInMainWorld('macvis', {
 
   mcp: {
     list: () => ipcRenderer.invoke('mcp:list'),
-    connect: (name: string) => ipcRenderer.invoke('mcp:connect', { name }),
-    disconnect: (name: string) => ipcRenderer.invoke('mcp:disconnect', { name }),
-    install: (name: string, command: string, args: string[]) =>
-      ipcRenderer.invoke('mcp:install', { name, command, args }),
+    registry: () => ipcRenderer.invoke('mcp:registry'),
+    connect: (id: string) => ipcRenderer.invoke('mcp:connect', { id }),
+    disconnect: (id: string) => ipcRenderer.invoke('mcp:disconnect', { id }),
+    installCustom: (name: string, command: string, args: string[], env?: Record<string, string>) =>
+      ipcRenderer.invoke('mcp:installCustom', { name, command, args, env }),
+    uninstallCustom: (id: string) => ipcRenderer.invoke('mcp:uninstallCustom', { id }),
+    autoConnectEnabled: () => ipcRenderer.invoke('mcp:autoConnectEnabled'),
     onStatus: (cb: (data: any) => void) => {
       const handler = (_: any, data: any) => cb(data)
       ipcRenderer.on('mcp:status', handler)

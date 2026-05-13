@@ -37,9 +37,19 @@ function createWindow() {
   })
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   setupIPCHandlers()
   createWindow()
+
+  // Auto-connect any MCP servers the user enabled in a previous session.
+  // Done lazily so the window opens fast — spawning npx can take a few seconds.
+  setTimeout(() => {
+    import('./core/mcp/MCPManager').then(({ MCPManager }) => {
+      MCPManager.getInstance().connectAllEnabled().catch(err => {
+        console.error('MCP auto-connect error:', err)
+      })
+    })
+  }, 1500)
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
