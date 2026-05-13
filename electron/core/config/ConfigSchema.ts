@@ -44,6 +44,6 @@ export const defaultConfig = {
     custom: [] as any[],
   },
   skills: { installed: [] as string[], enabled: [] as string[] },
-  ui: { theme: 'system', fontSize: 'medium', sidebarOpen: true },
+  ui: { theme: 'system', fontSize: 'medium', sidebarOpen: true, accent: 'green' as 'green' | 'red' | 'blue' | 'white' },
   telegram: { enabled: false, runOnStartup: false },
 }

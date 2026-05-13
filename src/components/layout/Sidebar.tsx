@@ -50,12 +50,12 @@ export function Sidebar({ currentPage, onNavigate }: Props) {
         <div
           style={{
             width: 26, height: 26, borderRadius: 7,
-            background: 'linear-gradient(135deg, var(--accent-bright) 0%, oklch(54% 0.22 150) 100%)',
+            background: 'linear-gradient(135deg, var(--accent-bright) 0%, var(--accent-grad-end) 100%)',
             display: 'grid', placeItems: 'center',
             fontSize: 12, fontWeight: 700,
-            color: 'oklch(98% 0 0)',
+            color: 'var(--accent-text-on)',
             fontFamily: 'var(--font-mono)',
-            boxShadow: '0 2px 8px var(--accent-glow), inset 0 1px 0 oklch(95% 0.05 150 / 0.4)',
+            boxShadow: '0 2px 8px var(--accent-glow), inset 0 1px 0 var(--accent-inset)',
           }}
         >
           M
@@ -85,12 +85,12 @@ export function Sidebar({ currentPage, onNavigate }: Props) {
             background: 'var(--accent)',
             border: '1px solid var(--accent)',
             borderRadius: 8,
-            color: 'oklch(98% 0 0)',
+            color: 'var(--accent-text-on)',
             fontSize: 12.5, fontWeight: 600,
             cursor: 'pointer',
             letterSpacing: '-0.005em',
             transition: 'all 120ms var(--ease)',
-            boxShadow: 'inset 0 1px 0 oklch(95% 0.05 150 / 0.3), 0 1px 3px oklch(0% 0 0 / 0.4), 0 0 16px var(--accent-glow)',
+            boxShadow: 'inset 0 1px 0 var(--accent-inset), 0 1px 3px oklch(0% 0 0 / 0.4), 0 0 16px var(--accent-glow)',
           }}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent-hover)' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent)' }}

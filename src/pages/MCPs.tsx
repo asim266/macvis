@@ -280,7 +280,7 @@ function FeaturedCard({
           opacity: (!connected && !inputsFilled && (def.inputs?.length || 0) > 0) ? 0.45 : 1,
           letterSpacing: '-0.005em',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          boxShadow: connected ? 'none' : 'inset 0 1px 0 oklch(95% 0.05 150 / 0.3), 0 0 14px var(--accent-glow)',
+          boxShadow: connected ? 'none' : 'inset 0 1px 0 var(--accent-inset), 0 0 14px var(--accent-glow)',
           transition: 'all 120ms var(--ease)',
         }}
       >
@@ -389,7 +389,7 @@ function MCPCard({
                 letterSpacing: '-0.005em',
                 display: 'flex', alignItems: 'center', gap: 5,
                 minWidth: 90, justifyContent: 'center',
-                boxShadow: connected ? 'none' : 'inset 0 1px 0 oklch(95% 0.05 150 / 0.3), 0 0 10px var(--accent-glow)',
+                boxShadow: connected ? 'none' : 'inset 0 1px 0 var(--accent-inset), 0 0 10px var(--accent-glow)',
               }}
             >
               {connecting && <Loader size={11} className="spin" />}
@@ -632,10 +632,10 @@ function CustomMCPModal({ onClose, onInstall }: { onClose: () => void; onInstall
               padding: '8px 14px', borderRadius: 7,
               border: '1px solid var(--accent)',
               background: 'var(--accent)',
-              color: 'oklch(98% 0 0)', fontSize: 12.5, fontWeight: 600,
+              color: 'var(--accent-text-on)', fontSize: 12.5, fontWeight: 600,
               cursor: busy ? 'wait' : 'pointer',
               display: 'flex', alignItems: 'center', gap: 6,
-              boxShadow: 'inset 0 1px 0 oklch(95% 0.05 150 / 0.3), 0 0 12px var(--accent-glow)',
+              boxShadow: 'inset 0 1px 0 var(--accent-inset), 0 0 12px var(--accent-glow)',
             }}
           >
             {busy && <Loader size={11} className="spin" />}

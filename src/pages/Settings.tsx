@@ -448,6 +448,55 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
   )
 }
 
+// ─── AccentPicker ────────────────────────────────────────────────────────────
+type AccentChoice = 'green' | 'red' | 'blue' | 'white'
+
+const ACCENT_SWATCHES: { id: AccentChoice; label: string; color: string }[] = [
+  { id: 'green', label: 'Emerald',  color: 'oklch(64% 0.17 150)' },
+  { id: 'red',   label: 'Crimson',  color: 'oklch(64% 0.22 25)' },
+  { id: 'blue',  label: 'Sapphire', color: 'oklch(64% 0.18 250)' },
+  { id: 'white', label: 'Mono',     color: 'oklch(95% 0.005 250)' },
+]
+
+function AccentPicker({ value, onChange }: { value: AccentChoice; onChange: (v: AccentChoice) => void }) {
+  return (
+    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+      {ACCENT_SWATCHES.map(s => {
+        const selected = value === s.id
+        return (
+          <button
+            key={s.id}
+            onClick={() => onChange(s.id)}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+              padding: '10px 12px 8px', borderRadius: 10,
+              border: `1px solid ${selected ? 'var(--accent-line)' : 'var(--line-1)'}`,
+              background: selected ? 'var(--accent-soft)' : 'var(--surface-3)',
+              cursor: 'pointer',
+              transition: 'all 150ms var(--ease)',
+              minWidth: 78,
+            }}
+          >
+            <div style={{
+              width: 32, height: 32, borderRadius: 8,
+              background: s.color,
+              boxShadow: selected
+                ? `0 0 0 2px var(--surface-3), 0 0 0 4px ${s.color}, 0 0 16px ${s.color}80`
+                : `0 0 0 1px ${s.id === 'white' ? 'var(--line-2)' : 'transparent'}`,
+              transition: 'box-shadow 200ms var(--ease)',
+            }} />
+            <span style={{
+              fontSize: 11, fontWeight: 500,
+              color: selected ? 'var(--ink-1)' : 'var(--ink-3)',
+              letterSpacing: '-0.005em',
+            }}>{s.label}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 // ─── PillGroup ────────────────────────────────────────────────────────────────
 function PillGroup<T extends string>({ options, value, onChange }: { options: T[]; value: T; onChange: (v: T) => void }) {
   return (
@@ -544,7 +593,7 @@ function TelegramControls() {
             cursor: busy ? 'wait' : 'pointer',
             display: 'flex', alignItems: 'center', gap: 6,
             letterSpacing: '-0.005em',
-            boxShadow: running ? 'none' : 'inset 0 1px 0 oklch(95% 0.05 150 / 0.3), 0 0 12px var(--accent-glow)',
+            boxShadow: running ? 'none' : 'inset 0 1px 0 var(--accent-inset), 0 0 12px var(--accent-glow)',
           }}
         >
           {busy ? <Loader size={11} className="spin" /> :
@@ -817,6 +866,12 @@ export function Settings() {
 
           {tab === 'appearance' && (
             <>
+              <Section title="Accent Color" hint="Changes the accent color used for buttons, highlights, and status indicators.">
+                <AccentPicker
+                  value={(config.ui?.accent as any) || 'green'}
+                  onChange={v => set('ui.accent', v)}
+                />
+              </Section>
               <Section title="Theme">
                 <PillGroup options={['system', 'dark', 'light'] as const} value={(config.ui?.theme || 'system') as any} onChange={v => set('ui.theme', v)} />
               </Section>

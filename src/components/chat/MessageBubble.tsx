@@ -42,15 +42,15 @@ export function MessageBubble({ message, isStreaming }: Props) {
             width: 24,
             height: 24,
             borderRadius: 7,
-            background: 'linear-gradient(135deg, var(--accent-bright) 0%, oklch(54% 0.22 150) 100%)',
+            background: 'linear-gradient(135deg, var(--accent-bright) 0%, var(--accent-grad-end) 100%)',
             display: 'grid',
             placeItems: 'center',
             fontSize: 11,
             fontWeight: 700,
-            color: 'oklch(98% 0 0)',
+            color: 'var(--accent-text-on)',
             fontFamily: 'var(--font-mono)',
             letterSpacing: 0,
-            boxShadow: '0 2px 6px var(--accent-glow), inset 0 1px 0 oklch(95% 0.05 150 / 0.4)',
+            boxShadow: '0 2px 6px var(--accent-glow), inset 0 1px 0 var(--accent-inset)',
           }}
         >
           M

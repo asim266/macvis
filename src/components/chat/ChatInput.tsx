@@ -126,7 +126,7 @@ export function ChatInput({ onSend, onStop, isStreaming, disabled }: Props) {
               transition: 'all 120ms var(--ease)',
               boxShadow:
                 isStreaming || canSend
-                  ? 'inset 0 1px 0 0 oklch(95% 0.05 150 / 0.35), 0 1px 3px oklch(0% 0 0 / 0.4), 0 0 12px var(--accent-glow)'
+                  ? 'inset 0 1px 0 0 var(--accent-inset), 0 1px 3px oklch(0% 0 0 / 0.4), 0 0 12px var(--accent-glow)'
                   : 'none',
             }}
           >

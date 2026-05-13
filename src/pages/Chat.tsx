@@ -183,12 +183,12 @@ export function Chat() {
               <div
                 style={{
                   width: 64, height: 64, borderRadius: 18,
-                  background: 'linear-gradient(135deg, var(--accent-bright) 0%, oklch(54% 0.22 150) 100%)',
+                  background: 'linear-gradient(135deg, var(--accent-bright) 0%, var(--accent-grad-end) 100%)',
                   display: 'grid', placeItems: 'center',
                   fontSize: 30, fontWeight: 700,
-                  color: 'oklch(98% 0 0)',
+                  color: 'var(--accent-text-on)',
                   fontFamily: 'var(--font-mono)',
-                  boxShadow: '0 0 80px -10px var(--accent-glow), 0 8px 24px oklch(0% 0 0 / 0.4), inset 0 1px 0 oklch(95% 0.05 150 / 0.4)',
+                  boxShadow: '0 0 80px -10px var(--accent-glow), 0 8px 24px oklch(0% 0 0 / 0.4), inset 0 1px 0 var(--accent-inset)',
                   marginBottom: 22,
                 }}
               >

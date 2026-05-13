@@ -5,12 +5,19 @@ import { Settings } from './pages/Settings'
 import { MCPs } from './pages/MCPs'
 import { Projects } from './pages/Projects'
 import { useChatStore } from './stores/chatStore'
+import { useConfigStore } from './stores/configStore'
 
 export type Page = 'chat' | 'settings' | 'mcps' | 'skills' | 'projects'
 
 export default function App() {
   const [page, setPage] = useState<Page>('chat')
   const loadSessions = useChatStore(s => s.loadSessions)
+  const accent = useConfigStore(s => s.config?.ui?.accent || 'green')
+
+  // Apply the theme accent attribute to <html> so [data-accent="..."] CSS rules match
+  useEffect(() => {
+    document.documentElement.setAttribute('data-accent', accent)
+  }, [accent])
 
   useEffect(() => {
     loadSessions()

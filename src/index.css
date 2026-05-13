@@ -2,34 +2,45 @@
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
 
 :root {
-  /* Surfaces — cool green-tinted grays, not pure black */
-  --surface-0:  oklch(13% 0.012 150);
-  --surface-1:  oklch(17% 0.014 150);    /* sidebar */
-  --surface-2:  oklch(20% 0.015 150);    /* main background */
-  --surface-3:  oklch(24% 0.018 150);    /* cards, inputs */
-  --surface-4:  oklch(29% 0.022 150);    /* hover */
-  --surface-5:  oklch(35% 0.026 150);    /* tooltips, dropdowns */
+  /* Theme hue + chroma — overridden by [data-accent=...] below.
+     Default: emerald green. */
+  --hue: 150;
+  --chroma-bg: 0.015;
+  --chroma-line: 0.02;
+  --chroma-ink: 0.015;
+  --chroma-accent: 0.17;
+  --accent-text-on: oklch(98% 0 0);     /* text color on top of accent (white on color) */
+  --accent-grad-end: oklch(54% 0.22 var(--hue));  /* darker end of accent gradient */
+
+  /* Surfaces — slightly tinted by --hue */
+  --surface-0:  oklch(13% var(--chroma-bg) var(--hue));
+  --surface-1:  oklch(17% var(--chroma-bg) var(--hue));    /* sidebar */
+  --surface-2:  oklch(20% var(--chroma-bg) var(--hue));    /* main background */
+  --surface-3:  oklch(24% calc(var(--chroma-bg) * 1.2) var(--hue));    /* cards, inputs */
+  --surface-4:  oklch(29% calc(var(--chroma-bg) * 1.5) var(--hue));    /* hover */
+  --surface-5:  oklch(35% calc(var(--chroma-bg) * 1.7) var(--hue));    /* tooltips, dropdowns */
 
   /* Borders */
-  --line-1:     oklch(26% 0.02 150);
-  --line-2:     oklch(34% 0.025 150);
-  --line-3:     oklch(46% 0.04 150);
+  --line-1:     oklch(26% var(--chroma-line) var(--hue));
+  --line-2:     oklch(34% calc(var(--chroma-line) * 1.25) var(--hue));
+  --line-3:     oklch(46% calc(var(--chroma-line) * 2) var(--hue));
 
   /* Text — 4-step hierarchy */
-  --ink-1:      oklch(96% 0.01 150);
-  --ink-2:      oklch(78% 0.018 150);
-  --ink-3:      oklch(60% 0.022 150);
-  --ink-4:      oklch(45% 0.025 150);
+  --ink-1:      oklch(96% calc(var(--chroma-ink) * 0.7) var(--hue));
+  --ink-2:      oklch(78% var(--chroma-ink) var(--hue));
+  --ink-3:      oklch(60% calc(var(--chroma-ink) * 1.5) var(--hue));
+  --ink-4:      oklch(45% calc(var(--chroma-ink) * 1.7) var(--hue));
 
-  /* Accent — vibrant emerald green */
-  --accent:        oklch(64% 0.17 150);
-  --accent-hover:  oklch(70% 0.17 150);
-  --accent-bright: oklch(72% 0.19 148);
-  --accent-soft:   oklch(64% 0.17 150 / 0.16);
-  --accent-line:   oklch(64% 0.17 150 / 0.45);
-  --accent-glow:   oklch(64% 0.17 150 / 0.55);
+  /* Accent */
+  --accent:        oklch(64% var(--chroma-accent) var(--hue));
+  --accent-hover:  oklch(70% var(--chroma-accent) var(--hue));
+  --accent-bright: oklch(72% calc(var(--chroma-accent) * 1.12) var(--hue));
+  --accent-soft:   oklch(64% var(--chroma-accent) var(--hue) / 0.16);
+  --accent-line:   oklch(64% var(--chroma-accent) var(--hue) / 0.45);
+  --accent-glow:   oklch(64% var(--chroma-accent) var(--hue) / 0.55);
+  --accent-inset:  oklch(95% 0.05 var(--hue) / 0.3);   /* inner-shadow highlight on accent buttons */
 
-  /* Status */
+  /* Status — fixed hues regardless of theme */
   --ok:        oklch(72% 0.155 150);
   --warn:      oklch(80% 0.135 80);
   --err:       oklch(68% 0.22 25);
@@ -54,6 +65,41 @@
   /* Motion */
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-snap: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Theme: green (default) */
+[data-accent="green"] { --hue: 150; --chroma-accent: 0.17; --accent-grad-end: oklch(54% 0.22 150); }
+
+/* Theme: red */
+[data-accent="red"] {
+  --hue: 25;
+  --chroma-accent: 0.22;
+  --accent-grad-end: oklch(54% 0.22 18);
+}
+
+/* Theme: blue */
+[data-accent="blue"] {
+  --hue: 250;
+  --chroma-accent: 0.18;
+  --accent-grad-end: oklch(54% 0.22 270);
+}
+
+/* Theme: white (high-contrast monochrome) */
+[data-accent="white"] {
+  --hue: 250;
+  --chroma-bg: 0.005;
+  --chroma-line: 0.005;
+  --chroma-ink: 0.005;
+  --chroma-accent: 0.005;
+  --accent: oklch(95% 0.005 250);
+  --accent-hover: oklch(98% 0.005 250);
+  --accent-bright: oklch(98% 0.005 250);
+  --accent-soft: oklch(95% 0.005 250 / 0.14);
+  --accent-line: oklch(95% 0.005 250 / 0.45);
+  --accent-glow: oklch(95% 0.005 250 / 0.4);
+  --accent-inset: oklch(60% 0.005 250 / 0.25);
+  --accent-text-on: oklch(15% 0.005 250);   /* dark text on white accent */
+  --accent-grad-end: oklch(78% 0.005 250);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
