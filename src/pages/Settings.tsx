@@ -24,7 +24,7 @@ const PROVIDER_LABELS: Record<string, string> = {
 
 // ─── Provider Card — key input + test + inline model picker ───────────────────
 function ProviderCard({
-  providerName, label, hint, configKey, value, placeholder,
+  providerName, label, hint, configKey, value, placeholder, docsUrl,
   providerInfo, selectedModel, onSave, onValidate, onSelectModel,
 }: {
   providerName: string
@@ -33,6 +33,7 @@ function ProviderCard({
   configKey: string
   value: string
   placeholder?: string
+  docsUrl?: string
   providerInfo?: ProviderInfo
   selectedModel?: string
   onSave: (key: string, value: string) => void
@@ -109,6 +110,26 @@ function ProviderCard({
             }}>
               ✓ {providerInfo!.models.length} models
             </span>
+          )}
+          {docsUrl && !isValid && (
+            <button
+              onClick={() => window.open(docsUrl, '_blank')}
+              style={{
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                padding: 0,
+                fontSize: 10, fontWeight: 600,
+                color: 'var(--accent-bright)',
+                fontFamily: 'var(--font-mono)',
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                transition: 'opacity 120ms var(--ease)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.opacity = '0.75' }}
+              onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
+            >
+              Get key →
+            </button>
           )}
         </div>
         {value && (
@@ -610,12 +631,12 @@ export function Settings() {
   ]
 
   const chatProviders = [
-    { name: 'anthropic', label: 'Anthropic', placeholder: 'sk-ant-...', hint: 'Get your key at console.anthropic.com' },
-    { name: 'openai', label: 'OpenAI', placeholder: 'sk-...', hint: 'Get your key at platform.openai.com' },
-    { name: 'openrouter', label: 'OpenRouter', placeholder: 'sk-or-...', hint: 'Access 200+ models with one key · openrouter.ai/keys' },
-    { name: 'gemini', label: 'Gemini', placeholder: 'AIza...', hint: 'Get your key at aistudio.google.com/apikey' },
-    { name: 'groq', label: 'Groq', placeholder: 'gsk_...', hint: 'Fast Llama / Mixtral inference · console.groq.com' },
-    { name: 'ollama', label: 'Ollama', placeholder: 'http://localhost:11434', hint: 'Local Ollama endpoint (no key needed)' },
+    { name: 'anthropic', label: 'Anthropic', placeholder: 'sk-ant-...', hint: 'Recommended primary provider for the agent', docsUrl: 'https://console.anthropic.com/settings/keys' },
+    { name: 'openai', label: 'OpenAI', placeholder: 'sk-...', hint: 'GPT-4o, GPT-5, o-series models', docsUrl: 'https://platform.openai.com/api-keys' },
+    { name: 'openrouter', label: 'OpenRouter', placeholder: 'sk-or-...', hint: 'Access 200+ models with a single key', docsUrl: 'https://openrouter.ai/keys' },
+    { name: 'gemini', label: 'Gemini', placeholder: 'AIza...', hint: 'Google Gemini 2.5 Pro / Flash', docsUrl: 'https://aistudio.google.com/apikey' },
+    { name: 'groq', label: 'Groq', placeholder: 'gsk_...', hint: 'Fast Llama / Mixtral inference', docsUrl: 'https://console.groq.com/keys' },
+    { name: 'ollama', label: 'Ollama', placeholder: 'http://localhost:11434', hint: 'Local Ollama endpoint (no key needed)', docsUrl: 'https://ollama.com/download' },
   ]
 
   // Build chain options from validated providers + their selected model
@@ -701,6 +722,7 @@ export function Settings() {
                     label={p.label}
                     hint={p.hint}
                     placeholder={p.placeholder}
+                    docsUrl={p.docsUrl}
                     configKey={`apiKeys.${p.name}`}
                     value={config.apiKeys?.[p.name] || ''}
                     providerInfo={providers[p.name]}
@@ -724,6 +746,7 @@ export function Settings() {
                   configKey="apiKeys.nanoBanana"
                   value={config.apiKeys?.nanoBanana || ''}
                   placeholder="AIza..."
+                  docsUrl="https://aistudio.google.com/apikey"
                   providerInfo={providers.nanoBanana}
                   selectedModel={config.models?.imageGen}
                   onSave={set}

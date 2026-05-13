@@ -53,10 +53,10 @@ const CATEGORIES: { id: string; label: string }[] = [
 
 // ─── Inline input ─────────────────────────────────────────────────────────────
 function InlineInput({
-  label, value, onSave, placeholder, type = 'password', hint,
+  label, value, onSave, placeholder, type = 'password', hint, docsUrl,
 }: {
   label: string; value: string; onSave: (v: string) => void
-  placeholder?: string; type?: string; hint?: string
+  placeholder?: string; type?: string; hint?: string; docsUrl?: string
 }) {
   const [local, setLocal] = useState(value)
   const [show, setShow] = useState(type !== 'password')
@@ -66,11 +66,33 @@ function InlineInput({
 
   return (
     <div style={{ marginBottom: 8 }}>
-      <label style={{
-        display: 'block', fontSize: 10, fontWeight: 600, color: 'var(--ink-4)',
-        textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 4,
-        fontFamily: 'var(--font-mono)',
-      }}>{label}</label>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+        <label style={{
+          fontSize: 10, fontWeight: 600, color: 'var(--ink-4)',
+          textTransform: 'uppercase', letterSpacing: '0.09em',
+          fontFamily: 'var(--font-mono)',
+        }}>{label}</label>
+        {docsUrl && (
+          <button
+            onClick={() => window.open(docsUrl, '_blank')}
+            style={{
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              padding: 0,
+              fontSize: 10, fontWeight: 600,
+              color: 'var(--accent-bright)',
+              fontFamily: 'var(--font-mono)',
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              transition: 'opacity 120ms var(--ease)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.opacity = '0.75' }}
+            onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
+          >
+            Get token <ExternalLink size={10} />
+          </button>
+        )}
+      </div>
       <div style={{
         display: 'flex', alignItems: 'center',
         background: 'var(--surface-3)',
@@ -198,8 +220,8 @@ function FeaturedCard({
         </div>
       </div>
 
-      {/* Inline inputs */}
-      {def.inputs?.map(input => (
+      {/* Inline inputs — first input shows the "Get token" link */}
+      {def.inputs?.map((input, i) => (
         <InlineInput
           key={input.configKey}
           label={input.label}
@@ -208,6 +230,7 @@ function FeaturedCard({
           placeholder={input.placeholder}
           type={input.type || 'password'}
           hint={input.hint}
+          docsUrl={i === 0 ? def.docsUrl : undefined}
         />
       ))}
 
@@ -256,21 +279,6 @@ function FeaturedCard({
         </span>
       </button>
 
-      {/* Docs link */}
-      {def.docsUrl && !connected && (
-        <a
-          href={def.docsUrl}
-          onClick={e => { e.preventDefault(); window.open(def.docsUrl, '_blank') }}
-          style={{
-            fontSize: 11, color: 'var(--ink-3)',
-            textDecoration: 'none',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-            marginTop: -4,
-          }}
-        >
-          Where to get a token <ExternalLink size={10} />
-        </a>
-      )}
     </div>
   )
 }
@@ -427,7 +435,7 @@ function MCPCard({
             </div>
           )}
 
-          {def.inputs?.map(input => (
+          {def.inputs?.map((input, i) => (
             <InlineInput
               key={input.configKey}
               label={input.label}
@@ -436,6 +444,7 @@ function MCPCard({
               placeholder={input.placeholder}
               type={input.type || 'password'}
               hint={input.hint}
+              docsUrl={i === 0 ? def.docsUrl : undefined}
             />
           ))}
 

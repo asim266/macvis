@@ -64,7 +64,7 @@ export const MCP_REGISTRY: MCPServerDef[] = [
       type: 'password',
       hint: 'Scopes needed: repo, workflow, read:org',
     }],
-    docsUrl: 'https://github.com/settings/tokens/new',
+    docsUrl: 'https://github.com/settings/tokens/new?scopes=repo,workflow,read:org&description=MacVis',
   },
   {
     id: 'vercel',
@@ -212,7 +212,7 @@ export const MCP_REGISTRY: MCPServerDef[] = [
       type: 'password',
       hint: 'Free tier: 2000 queries/month',
     }],
-    docsUrl: 'https://api-dashboard.search.brave.com',
+    docsUrl: 'https://api-dashboard.search.brave.com/app/keys',
   },
   {
     id: 'fetch',
@@ -240,7 +240,7 @@ export const MCP_REGISTRY: MCPServerDef[] = [
       configKey: 'apiKeys.firecrawl',
       type: 'password',
     }],
-    docsUrl: 'https://firecrawl.dev',
+    docsUrl: 'https://www.firecrawl.dev/app/api-keys',
   },
 
   // ─── COMMUNICATION ─────────────────────────────────────────────────────────
