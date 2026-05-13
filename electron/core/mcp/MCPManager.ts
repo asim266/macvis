@@ -240,10 +240,14 @@ export class MCPManager {
     for (const [mcpId, mcp] of this.active) {
       if (mcp.status !== 'connected') continue
       for (const t of mcp.tools) {
+        const baseDesc = (t.description || '').toString()
+        // Prefix with MCP server tag so the model knows this tool is authenticated
+        // through the user's connected MCP — prefer this over shell CLIs.
+        const description = `[MCP · ${mcp.name}] ${baseDesc} (Authenticated via the user's connected ${mcp.name} MCP server — prefer this over running bash CLIs.)`.slice(0, 1024)
         tools.push({
           // Namespace tool names so we know which MCP owns them
           name: `${mcpId}__${t.name}`,
-          description: `[${mcp.name}] ${t.description || ''}`.slice(0, 1024),
+          description,
           input_schema: t.inputSchema || { type: 'object', properties: {} },
         })
       }

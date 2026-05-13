@@ -19,9 +19,26 @@ const PROVIDER_KEY_PATH: Record<ProviderName, string> = {
   ollama: 'apiKeys.ollama',
 }
 
-function buildSystemPrompt(): string {
+function buildSystemPrompt(connectedMCPs: string[] = []): string {
   const home = os.homedir()
-  return `You are MacVis — a local-first AI assistant running natively on the user's macOS machine. You have full access to bash, the filesystem, and web search. Be concise and direct.
+  const mcpSection = connectedMCPs.length > 0
+    ? `# Active MCP integrations
+
+The following MCP servers are connected and authenticated. Their tools are available to you with the naming convention \`<service>__<action>\` (double underscore). These are NOT generic API stubs — they route through live, authenticated MCP servers that the user has already configured with their tokens.
+
+Connected: ${connectedMCPs.map(m => `**${m}**`).join(', ')}
+
+**When the user asks about a service that's connected via MCP, ALWAYS prefer the \`<service>__*\` tools over running bash with a CLI (\`gh\`, \`vercel\`, \`supabase\`, etc.).** The MCP tools are already authenticated; bash CLIs may not be installed or signed in.
+
+For example, if GitHub is connected:
+- ✅ Use \`github__search_repositories\`, \`github__create_issue\`, \`github__push_files\`
+- ❌ Don't fall back to \`gh repo list\` or \`gh issue create\` via bash
+
+Only fall back to bash for a connected service if the specific MCP tool you need doesn't exist.
+`
+    : ''
+
+  return `You are MacVis — a local-first AI assistant running natively on the user's macOS machine. You have full access to bash, the filesystem, web search, and any MCP servers the user has connected. Be concise and direct.
 
 # Workspace conventions
 
@@ -32,7 +49,7 @@ Never create code projects in the home directory or arbitrary locations. The use
 
 For one-off scripts or experiments, you may use ${home} or /tmp.
 
-# Memory
+${mcpSection}# Memory
 
 You have access to the full conversation history in this session. Reference what you've already done — files you created, commands you ran, decisions made. Do not say "I haven't created anything yet" if you can see prior tool calls in the conversation.
 
@@ -147,7 +164,15 @@ export class AgentLoop {
     }
 
     const tools = await ToolBuilder.buildAll(config)
-    const systemPrompt = buildSystemPrompt()
+
+    // Discover which MCPs are connected so we can mention them in the system prompt
+    const { MCPManager } = await import('../mcp/MCPManager')
+    const connectedMCPs = MCPManager.getInstance()
+      .list()
+      .filter(m => m.status === 'connected')
+      .map(m => m.name)
+
+    const systemPrompt = buildSystemPrompt(connectedMCPs)
 
     let assistantMsg: PersistedMessage | null = null
 
