@@ -13,6 +13,7 @@ function createWindow() {
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 16, y: 16 },
     backgroundColor: '#0d0d0d',
+    icon: join(__dirname, '../../assets/icon.png'),
     vibrancy: 'under-window',
     visualEffectState: 'active',
     webPreferences: {
@@ -40,6 +41,11 @@ function createWindow() {
 app.whenReady().then(async () => {
   setupIPCHandlers()
   createWindow()
+
+  // Auto-updater (no-op in dev; uses GitHub Releases in packaged builds)
+  import('./core/updater/AutoUpdater').then(({ setupAutoUpdater }) => {
+    setupAutoUpdater()
+  })
 
   // Auto-connect any MCP servers the user enabled in a previous session.
   // Done lazily so the window opens fast — spawning npx can take a few seconds.

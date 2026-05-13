@@ -98,6 +98,14 @@ contextBridge.exposeInMainWorld('macvis', {
     rename: (id: string, title: string) => ipcRenderer.invoke('sessions:rename', { id, title }),
   },
 
+  updater: {
+    onStatus: (cb: (data: any) => void) => {
+      const handler = (_: any, data: any) => cb(data)
+      ipcRenderer.on('updater:status', handler)
+      return () => ipcRenderer.removeListener('updater:status', handler)
+    },
+  },
+
   projects: {
     list: () => ipcRenderer.invoke('projects:list'),
     openInFinder: (path: string) => ipcRenderer.invoke('projects:openInFinder', { path }),

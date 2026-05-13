@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!--
+    Entitlements for the hardened-runtime macOS build.
+    Electron needs these JIT / unsigned-memory relaxations to launch under
+    Hardened Runtime, even when notarized.
+  -->
+
+  <!-- Electron needs the V8 JIT compiler -->
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+
+  <!-- Some native modules ship as unsigned dylibs (sharp, node-pty, etc.) -->
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
+
+  <!-- Allow loading dyld plugins from the bundle -->
+  <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+  <true/>
+
+  <!--
+    User-facing permissions. The strings here appear in the
+    macOS prompts the first time MacVis tries to use each capability.
+  -->
+  <key>com.apple.security.device.audio-input</key>
+  <true/>
+  <key>com.apple.security.device.camera</key>
+  <true/>
+  <key>com.apple.security.automation.apple-events</key>
+  <true/>
+  <key>com.apple.security.files.user-selected.read-write</key>
+  <true/>
+  <key>com.apple.security.network.client</key>
+  <true/>
+  <key>com.apple.security.network.server</key>
+  <true/>
+</dict>
+</plist>

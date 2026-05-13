@@ -5,19 +5,29 @@ artifactName: ${productName}-${version}-${arch}.${ext}
 
 mac:
   category: public.app-category.productivity
+  icon: assets/icon.icns
   target:
     - target: dmg
       arch:
         - arm64
         - x64
+  # Code-signing config (see docs/SIGNING.md).
+  # Default unsigned: identity:null + hardenedRuntime:false.
+  # To produce a signed + notarized build, run:
+  #   pnpm build --mac --config.mac.identity="Developer ID Application: <Name> (<TEAMID>)" \
+  #              --config.mac.hardenedRuntime=true \
+  #              --config.mac.notarize=true
+  # plus APPLE_ID + APPLE_APP_SPECIFIC_PASSWORD + APPLE_TEAM_ID env vars.
   hardenedRuntime: false
   gatekeeperAssess: false
-  identity: null  # Skip code signing for now (open-source, BYO-sign)
+  identity: null
+  entitlements: assets/entitlements.mac.plist
+  entitlementsInherit: assets/entitlements.mac.plist
   extendInfo:
     NSMicrophoneUsageDescription: MacVis uses the microphone for voice input
-    NSCameraUsageDescription: MacVis may access camera for vision features
-    NSAppleEventsUsageDescription: MacVis needs automation access to control apps
-    NSSystemAdministrationUsageDescription: MacVis needs admin access for some operations
+    NSCameraUsageDescription: MacVis may access the camera for vision features
+    NSAppleEventsUsageDescription: MacVis uses Apple Events to automate other apps
+    NSSystemAdministrationUsageDescription: MacVis may use admin access for some operations
 
 dmg:
   window:
@@ -44,5 +54,11 @@ files:
 
 asar: true
 
-# Skip publishing — release is uploaded manually via gh release create
-publish: null
+# Publish channel for electron-updater. We don't auto-publish from `pnpm build`
+# (publish flag must be passed explicitly), but the channel is configured so
+# the updater knows where to look once a release is uploaded.
+publish:
+  - provider: github
+    owner: asim266
+    repo: macvis
+    releaseType: release
