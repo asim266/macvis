@@ -1,8 +1,10 @@
 <div align="center">
 
-# MacVis
+# MacVis — open-source local-first AI agent for macOS
 
-**A local-first, fully-agentic AI assistant for macOS.**
+**A free desktop AI assistant for Mac with full system access, multi-provider model routing (Claude / GPT / Gemini / Ollama), and Model Context Protocol (MCP) integrations.**
+
+🌐 **Website:** [asim266.github.io/macvis](https://asim266.github.io/macvis/) · 📦 **Download:** [latest .dmg release](https://github.com/asim266/macvis/releases/latest)
 
 Bring-your-own-key. Multi-provider. No backend. No telemetry. Full Mac access.
 
@@ -214,6 +216,24 @@ The main process owns all I/O, AI calls, and tool execution. The renderer is pur
 - API keys are stored locally in `~/Library/Application Support/macvis/config.json`.
 - Provider validation hits the providers directly from your machine; no proxy in between.
 - **No analytics, no telemetry, no remote logging.** Open the network tab — every call is direct to a provider you configured.
+
+## FAQ
+
+**Is MacVis free?** Yes — MIT-licensed. You pay only the AI providers you choose. Or use Ollama (local Llama, Mistral, Qwen, etc.) for zero cost.
+
+**Is there a Claude Desktop alternative for Mac that supports MCP?** Yes — MacVis is exactly that. 19 built-in MCP integrations plus a custom server form.
+
+**Can I run an AI agent locally on my Mac without sending data to the cloud?** Yes — combine MacVis with [Ollama](https://ollama.com) for a fully local agent loop. No internet, no API keys.
+
+**Is MacVis open source?** Yes — full source at [github.com/asim266/macvis](https://github.com/asim266/macvis). PRs welcome.
+
+**What models does MacVis support?** Anthropic (Claude Opus / Sonnet / Haiku), OpenAI (GPT-4o, GPT-5, o-series), Google Gemini (2.5 Pro / Flash), OpenRouter (200+ models), Groq (Llama, Mixtral), Ollama (any local model).
+
+**Does MacVis send my data anywhere?** No backend, no telemetry. Every API call goes directly from your Mac to the provider you configured. Conversations are JSON files in `~/.macvis/sessions/` on your machine.
+
+**How is MacVis different from Cursor / Continue / Claude Code?** Those are agent surfaces embedded in your IDE. MacVis is a standalone desktop assistant — it can drive bash, Finder, Mail, deploy to Vercel, send Slack messages — not just edit code.
+
+**Is the DMG signed?** Not yet — code-signing tracked in [#2](https://github.com/asim266/macvis/issues/2). For now, right-click → Open on first launch, or run `xattr -d com.apple.quarantine /Applications/MacVis.app`.
 
 ## Comparable projects
 
