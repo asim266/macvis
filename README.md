@@ -197,11 +197,16 @@ The main process owns all I/O, AI calls, and tool execution. The renderer is pur
 | 2. Full settings with multi-provider BYOK + validation | ✅ |
 | 3. Tool system: bash, filesystem, web search, projects, memory | ✅ |
 | 3b. Multi-provider routing with fallback chain | ✅ |
-| 4. MCP manager — live MCP server connectivity | ⏳ |
-| 5. Platform integrations: GitHub, Vercel, Supabase, Railway | ⏳ |
-| 6. Skills loader + Web Builder skill | ⏳ |
-| 7. Telegram remote control | ⏳ |
-| 8. DMG packaging + auto-updater | ⏳ |
+| 4. MCP manager — live MCP server connectivity | ✅ |
+| 5. Platform integrations: GitHub, Vercel, Supabase, Railway, Slack, Stripe, Notion, Linear, … | ✅ |
+| 7. Telegram remote control (single-user-gated bot) | ✅ |
+| 8a. DMG packaging (arm64 + x64) | ✅ |
+| 8b. Code-signing + notarization | ⏳ [#2](https://github.com/asim266/macvis/issues/2) |
+| 8c. Auto-updater (electron-updater) | ⏳ [#3](https://github.com/asim266/macvis/issues/3) |
+| 6. Skills loader + Web Builder skill | ⏳ [#4](https://github.com/asim266/macvis/issues/4) |
+| 9. Tool-call approval mode (require OK before destructive actions) | ⏳ [#5](https://github.com/asim266/macvis/issues/5) |
+
+**8 of 11 milestones shipped.** The remaining 3 each have a tracking issue you can pick up.
 
 ## Privacy
 
