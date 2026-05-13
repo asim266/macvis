@@ -12,6 +12,10 @@ export interface MCPServerDef {
   category: 'deployment' | 'database' | 'comms' | 'search' | 'payments' | 'productivity' | 'utility' | 'media' | 'custom'
   /** Vendor: "official" (Anthropic), "vendor" (provider), "community" */
   source: 'official' | 'vendor' | 'community'
+  /** Featured at top of Integrations page for quick-connect */
+  featured?: boolean
+  /** Accent color for the featured card (CSS oklch or hex) */
+  brandColor?: string
   /** Display icon (emoji or character) */
   icon: string
   /** Command to spawn (e.g. "npx") */
@@ -47,6 +51,8 @@ export const MCP_REGISTRY: MCPServerDef[] = [
     description: 'Repos, PRs, issues, Actions, push files',
     category: 'deployment',
     source: 'official',
+    featured: true,
+    brandColor: 'oklch(70% 0.005 280)',
     icon: '🐙',
     command: 'npx',
     args: ['-y', '@modelcontextprotocol/server-github'],
@@ -66,6 +72,8 @@ export const MCP_REGISTRY: MCPServerDef[] = [
     description: 'Deploy projects, manage domains and env vars',
     category: 'deployment',
     source: 'vendor',
+    featured: true,
+    brandColor: 'oklch(95% 0.005 0)',
     icon: '▲',
     command: 'npx',
     args: ['-y', '@vercel/mcp-adapter'],
@@ -119,6 +127,8 @@ export const MCP_REGISTRY: MCPServerDef[] = [
     description: 'Deploy services, manage databases',
     category: 'deployment',
     source: 'community',
+    featured: true,
+    brandColor: 'oklch(58% 0.18 290)',
     icon: '🚂',
     command: 'npx',
     args: ['-y', '@jasontanswe/railway-mcp'],
@@ -138,6 +148,8 @@ export const MCP_REGISTRY: MCPServerDef[] = [
     description: 'Database, auth, storage, edge functions',
     category: 'database',
     source: 'official',
+    featured: true,
+    brandColor: 'oklch(72% 0.16 150)',
     icon: '🟢',
     command: 'npx',
     args: ['-y', '@supabase/mcp-server-supabase'],

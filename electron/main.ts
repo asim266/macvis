@@ -49,6 +49,18 @@ app.whenReady().then(async () => {
         console.error('MCP auto-connect error:', err)
       })
     })
+
+    // Auto-start Telegram bot if configured to run on startup
+    import('./core/config/ConfigStore').then(({ ConfigStore }) => {
+      const config = ConfigStore.getInstance()
+      if (config.get('telegram.runOnStartup')) {
+        import('./core/telegram/TelegramBot').then(({ startTelegramBot }) => {
+          startTelegramBot().then(r => {
+            if (!r.ok) console.warn('Telegram auto-start failed:', r.error)
+          })
+        })
+      }
+    })
   }, 1500)
 
   app.on('activate', () => {

@@ -6,7 +6,7 @@ import { MCPs } from './pages/MCPs'
 import { Projects } from './pages/Projects'
 import { useChatStore } from './stores/chatStore'
 
-export type Page = 'chat' | 'settings' | 'mcps' | 'skills' | 'projects' | 'telegram'
+export type Page = 'chat' | 'settings' | 'mcps' | 'skills' | 'projects'
 
 export default function App() {
   const [page, setPage] = useState<Page>('chat')
@@ -14,6 +14,16 @@ export default function App() {
 
   useEffect(() => {
     loadSessions()
+
+    // Reload sessions when a Telegram message arrives so the new chat appears
+    const unsubTelegram = window.macvis?.telegram?.onMessage?.((_data: any) => {
+      // Small delay to let SessionStore.saveNow finish on the main side
+      setTimeout(() => loadSessions(), 800)
+      // And again after the response is likely written
+      setTimeout(() => loadSessions(), 4000)
+    })
+
+    return () => { unsubTelegram?.() }
   }, [loadSessions])
 
   return (
@@ -24,7 +34,7 @@ export default function App() {
         {page === 'settings' && <Settings />}
         {page === 'mcps' && <MCPs />}
         {page === 'projects' && <Projects />}
-        {(page === 'skills' || page === 'telegram') && (
+        {page === 'skills' && (
           <div style={{
             flex: 1,
             display: 'flex', alignItems: 'center', justifyContent: 'center',

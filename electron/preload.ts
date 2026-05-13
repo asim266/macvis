@@ -68,10 +68,16 @@ contextBridge.exposeInMainWorld('macvis', {
   telegram: {
     start: () => ipcRenderer.invoke('telegram:start'),
     stop: () => ipcRenderer.invoke('telegram:stop'),
+    status: () => ipcRenderer.invoke('telegram:status'),
     onStatus: (cb: (data: any) => void) => {
       const handler = (_: any, data: any) => cb(data)
       ipcRenderer.on('telegram:status', handler)
       return () => ipcRenderer.removeListener('telegram:status', handler)
+    },
+    onMessage: (cb: (data: any) => void) => {
+      const handler = (_: any, data: any) => cb(data)
+      ipcRenderer.on('telegram:message', handler)
+      return () => ipcRenderer.removeListener('telegram:message', handler)
     },
   },
 

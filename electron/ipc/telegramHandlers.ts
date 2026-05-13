@@ -1,12 +1,18 @@
 import { ipcMain } from 'electron'
+import { startTelegramBot, stopTelegramBot, isTelegramBotRunning } from '../core/telegram/TelegramBot'
 
 export function setupTelegramHandlers() {
   ipcMain.handle('telegram:start', async () => {
-    return { ok: true }
+    return await startTelegramBot()
   })
 
   ipcMain.handle('telegram:stop', async () => {
+    await stopTelegramBot()
     return { ok: true }
+  })
+
+  ipcMain.handle('telegram:status', async () => {
+    return { running: isTelegramBotRunning() }
   })
 
   ipcMain.handle('shell:run', async (_, { command }) => {

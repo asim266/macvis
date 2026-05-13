@@ -8,6 +8,8 @@ interface MCPDef {
   description: string
   category: string
   source: 'official' | 'vendor' | 'community'
+  featured?: boolean
+  brandColor?: string
   icon: string
   command: string
   args: string[]
@@ -100,6 +102,175 @@ function InlineInput({
         )}
       </div>
       {hint && <p style={{ fontSize: 10.5, color: 'var(--ink-4)', marginTop: 4 }}>{hint}</p>}
+    </div>
+  )
+}
+
+// ─── Featured Card ───────────────────────────────────────────────────────────
+// A larger, prominent quick-connect card for the top 4 platform MCPs.
+// Always shows token input(s) inline — no "click to expand" friction.
+function FeaturedCard({
+  def, status, config, onConnect, onDisconnect, onConfigSave,
+}: {
+  def: MCPDef
+  status: MCPStatus | undefined
+  config: any
+  onConnect: (id: string) => Promise<void>
+  onDisconnect: (id: string) => Promise<void>
+  onConfigSave: (key: string, value: string) => void
+}) {
+  const [busy, setBusy] = useState(false)
+  const connected = status?.status === 'connected'
+  const connecting = status?.status === 'connecting' || busy
+  const errored = status?.status === 'error'
+
+  const inputsFilled = (def.inputs || []).every(i => !!getNested(config, i.configKey))
+
+  const handleToggle = async () => {
+    setBusy(true)
+    try {
+      if (connected) await onDisconnect(def.id)
+      else await onConnect(def.id)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const accent = def.brandColor || 'var(--accent)'
+
+  return (
+    <div style={{
+      background: `linear-gradient(135deg, ${accent} 0%, transparent 50%), var(--surface-2)`,
+      backgroundBlendMode: 'overlay',
+      border: `1px solid ${connected ? 'var(--accent-line)' : errored ? 'var(--err)' : 'var(--line-1)'}`,
+      borderRadius: 12,
+      padding: '16px 18px',
+      position: 'relative',
+      overflow: 'hidden',
+      transition: 'border-color 200ms var(--ease)',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 12,
+    }}>
+      {/* Decorative glow */}
+      <div style={{
+        position: 'absolute',
+        top: -40, right: -40,
+        width: 140, height: 140,
+        borderRadius: '50%',
+        background: accent,
+        filter: 'blur(50px)',
+        opacity: 0.18,
+        pointerEvents: 'none',
+      }} />
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
+        <div style={{
+          width: 44, height: 44, borderRadius: 10,
+          background: 'var(--surface-3)',
+          border: '1px solid var(--line-1)',
+          display: 'grid', placeItems: 'center',
+          fontSize: 22, flexShrink: 0,
+          boxShadow: `0 0 18px ${accent}33`,
+        }}>{def.icon}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontSize: 15, fontWeight: 600, color: 'var(--ink-1)',
+            letterSpacing: '-0.015em',
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            <span>{def.name}</span>
+            {connected && (
+              <span style={{
+                fontFamily: 'var(--font-mono)', fontSize: 9.5, fontWeight: 600,
+                color: 'var(--ok)',
+                background: 'oklch(72% 0.155 150 / 0.1)',
+                border: '1px solid oklch(72% 0.155 150 / 0.3)',
+                padding: '1.5px 6px', borderRadius: 999,
+                textTransform: 'uppercase', letterSpacing: '0.06em',
+              }}>✓ {status!.toolCount} tools</span>
+            )}
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 2, lineHeight: 1.45 }}>
+            {def.description}
+          </p>
+        </div>
+      </div>
+
+      {/* Inline inputs */}
+      {def.inputs?.map(input => (
+        <InlineInput
+          key={input.configKey}
+          label={input.label}
+          value={String(getNested(config, input.configKey) || '')}
+          onSave={v => onConfigSave(input.configKey, v)}
+          placeholder={input.placeholder}
+          type={input.type || 'password'}
+          hint={input.hint}
+        />
+      ))}
+
+      {/* Error */}
+      {errored && status?.error && (
+        <div style={{
+          padding: '8px 10px',
+          background: 'oklch(68% 0.22 25 / 0.08)',
+          border: '1px solid oklch(68% 0.22 25 / 0.3)',
+          borderRadius: 6,
+          fontSize: 11, color: 'var(--err)',
+          fontFamily: 'var(--font-mono)',
+          display: 'flex', alignItems: 'flex-start', gap: 6,
+        }}>
+          <AlertCircle size={11} style={{ flexShrink: 0, marginTop: 1 }} />
+          <span style={{ wordBreak: 'break-word' }}>{status.error}</span>
+        </div>
+      )}
+
+      {/* Connect button */}
+      <button
+        onClick={handleToggle}
+        disabled={connecting || (!connected && !inputsFilled && (def.inputs?.length || 0) > 0)}
+        style={{
+          width: '100%',
+          padding: '9px 14px', borderRadius: 8,
+          border: '1px solid',
+          borderColor: connected ? 'var(--line-2)' : 'var(--accent)',
+          background: connected ? 'var(--surface-3)' : 'var(--accent)',
+          color: connected ? 'var(--ink-1)' : 'oklch(98% 0 0)',
+          fontSize: 12.5, fontWeight: 600, cursor: connecting ? 'wait' : 'pointer',
+          opacity: (!connected && !inputsFilled && (def.inputs?.length || 0) > 0) ? 0.45 : 1,
+          letterSpacing: '-0.005em',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          boxShadow: connected ? 'none' : 'inset 0 1px 0 oklch(95% 0.05 25 / 0.3), 0 0 14px var(--accent-glow)',
+          transition: 'all 120ms var(--ease)',
+        }}
+      >
+        {connecting && <Loader size={12} className="spin" />}
+        {connected && !connecting && <Check size={12} strokeWidth={3} />}
+        <span>
+          {connecting ? 'Connecting…' :
+           connected ? `Connected — disconnect` :
+           errored ? `Retry connect to ${def.name}` :
+           `Connect ${def.name}`}
+        </span>
+      </button>
+
+      {/* Docs link */}
+      {def.docsUrl && !connected && (
+        <a
+          href={def.docsUrl}
+          onClick={e => { e.preventDefault(); window.open(def.docsUrl, '_blank') }}
+          style={{
+            fontSize: 11, color: 'var(--ink-3)',
+            textDecoration: 'none',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+            marginTop: -4,
+          }}
+        >
+          Where to get a token <ExternalLink size={10} />
+        </a>
+      )}
     </div>
   )
 }
@@ -614,6 +785,35 @@ export function MCPs() {
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '20px 32px 32px' }}>
         <div className="fade-up" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
 
+          {/* Featured Quick Connect (only on 'all' category, no search) */}
+          {category === 'all' && !search && (
+            <>
+              <h3 style={{
+                fontSize: 10.5, fontWeight: 700, color: 'var(--ink-4)',
+                textTransform: 'uppercase', letterSpacing: '0.12em',
+                fontFamily: 'var(--font-mono)', marginTop: 4, marginBottom: 6,
+              }}>Quick Connect</h3>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                gap: 12,
+                marginBottom: 12,
+              }}>
+                {registry.filter(d => d.featured).map(def => (
+                  <FeaturedCard
+                    key={def.id}
+                    def={def}
+                    status={statuses.get(def.id)}
+                    config={config}
+                    onConnect={handleConnect}
+                    onDisconnect={handleDisconnect}
+                    onConfigSave={set}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
           {/* Custom MCPs section */}
           {customMCPs.length > 0 && category === 'all' && (
             <>
@@ -691,6 +891,15 @@ export function MCPs() {
                 fontFamily: 'var(--font-mono)', marginTop: 16, marginBottom: 4,
               }}>Catalog</h3>
             </>
+          )}
+
+          {/* Catalog header when there are featured cards above */}
+          {category === 'all' && !search && customMCPs.length === 0 && (
+            <h3 style={{
+              fontSize: 10.5, fontWeight: 700, color: 'var(--ink-4)',
+              textTransform: 'uppercase', letterSpacing: '0.12em',
+              fontFamily: 'var(--font-mono)', marginTop: 10, marginBottom: 4,
+            }}>All Integrations</h3>
           )}
 
           {filtered.length === 0 ? (

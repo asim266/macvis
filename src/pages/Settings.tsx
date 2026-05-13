@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useConfigStore } from '../stores/configStore'
-import { Eye, EyeOff, Check, X, Loader, AlertCircle, ArrowUpDown } from 'lucide-react'
+import { Eye, EyeOff, Check, X, Loader, AlertCircle, Play, Square } from 'lucide-react'
 
-type Tab = 'chat' | 'other' | 'mcps' | 'telegram' | 'appearance'
+type Tab = 'chat' | 'other' | 'telegram' | 'appearance'
 type ValidationState = 'idle' | 'validating' | 'valid' | 'invalid'
 
 interface ProviderInfo {
@@ -402,95 +402,6 @@ function ChainSlot({
   )
 }
 
-// ─── MCP card ─────────────────────────────────────────────────────────────────
-function MCPCard({
-  name, displayName, description, icon, enabled, token, tokenLabel, tokenKey,
-  onToggle, onTokenSave,
-}: any) {
-  const [localToken, setLocalToken] = useState(token || '')
-  const [show, setShow] = useState(false)
-  const [focused, setFocused] = useState(false)
-  useEffect(() => { setLocalToken(token || '') }, [token])
-
-  return (
-    <div style={{
-      background: 'var(--surface-2)',
-      border: `1px solid ${enabled ? 'var(--accent-line)' : 'var(--line-1)'}`,
-      borderRadius: 10, padding: '14px 16px', marginBottom: 10,
-      transition: 'border-color 200ms var(--ease)',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: tokenKey ? 14 : 0 }}>
-        <div style={{
-          width: 36, height: 36, borderRadius: 8,
-          background: 'var(--surface-3)', border: '1px solid var(--line-1)',
-          display: 'grid', placeItems: 'center', fontSize: 18, flexShrink: 0,
-        }}>{icon}</div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink-1)', letterSpacing: '-0.01em' }}>{displayName}</div>
-          <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 2, lineHeight: 1.5 }}>{description}</div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '3px 8px',
-            background: enabled ? 'oklch(72% 0.155 150 / 0.1)' : 'var(--surface-3)',
-            border: `1px solid ${enabled ? 'oklch(72% 0.155 150 / 0.3)' : 'var(--line-1)'}`,
-            borderRadius: 999, fontFamily: 'var(--font-mono)',
-            fontSize: 9.5, fontWeight: 600,
-            color: enabled ? 'var(--ok)' : 'var(--ink-3)',
-            textTransform: 'uppercase', letterSpacing: '0.08em',
-          }}>
-            <span style={{ width: 5, height: 5, borderRadius: 999, background: 'currentColor' }} />
-            {enabled ? 'on' : 'off'}
-          </span>
-          <button
-            onClick={() => onToggle(name, !enabled)}
-            style={{
-              padding: '6px 13px', borderRadius: 7,
-              border: '1px solid',
-              borderColor: enabled ? 'var(--line-2)' : 'var(--accent)',
-              background: enabled ? 'var(--surface-3)' : 'var(--accent)',
-              color: enabled ? 'var(--ink-1)' : 'oklch(98% 0 0)',
-              fontSize: 11.5, fontWeight: 600, cursor: 'pointer',
-              letterSpacing: '-0.005em', transition: 'all 120ms var(--ease)',
-              boxShadow: enabled ? 'none' : 'inset 0 1px 0 oklch(95% 0.05 25 / 0.35), 0 0 12px var(--accent-glow)',
-            }}
-          >
-            {enabled ? 'Disable' : 'Enable'}
-          </button>
-        </div>
-      </div>
-      {tokenKey && (
-        <div style={{
-          display: 'flex', alignItems: 'center',
-          background: 'var(--surface-3)',
-          border: `1px solid ${focused ? 'var(--line-3)' : 'var(--line-1)'}`,
-          borderRadius: 7, padding: '0 10px',
-          transition: 'border-color 120ms var(--ease)',
-        }}>
-          <input
-            type={show ? 'text' : 'password'}
-            value={localToken}
-            onChange={e => setLocalToken(e.target.value)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => { setFocused(false); onTokenSave(tokenKey, localToken) }}
-            placeholder={tokenLabel || 'API key'}
-            style={{
-              flex: 1, background: 'transparent', border: 'none', outline: 'none',
-              color: 'var(--ink-1)', fontSize: 12, padding: '7px 0',
-              fontFamily: 'var(--font-mono)',
-            }}
-            className="selectable"
-          />
-          <button onClick={() => setShow(v => !v)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-3)', padding: 4, display: 'flex' }}>
-            {show ? <EyeOff size={12} /> : <Eye size={12} />}
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ─── Toggle ───────────────────────────────────────────────────────────────────
 function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
@@ -534,6 +445,107 @@ function PillGroup<T extends string>({ options, value, onChange }: { options: T[
           boxShadow: value === opt ? 'var(--shadow-1)' : 'none',
         }}>{opt}</button>
       ))}
+    </div>
+  )
+}
+
+// ─── Telegram controls ───────────────────────────────────────────────────────
+function TelegramControls() {
+  const [running, setRunning] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    window.macvis.telegram.status().then((r: any) => setRunning(!!r?.running))
+    const unsub = window.macvis.telegram.onStatus((data: any) => {
+      setRunning(!!data.running)
+      if (data.error) setError(data.error)
+      else setError(null)
+    })
+    return unsub
+  }, [])
+
+  const handleStart = async () => {
+    setBusy(true)
+    setError(null)
+    const r = await window.macvis.telegram.start()
+    if (!r.ok) setError(r.error || 'Failed to start bot')
+    else setRunning(true)
+    setBusy(false)
+  }
+
+  const handleStop = async () => {
+    setBusy(true)
+    await window.macvis.telegram.stop()
+    setRunning(false)
+    setBusy(false)
+  }
+
+  return (
+    <div>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '12px 14px',
+        background: 'var(--surface-3)',
+        border: `1px solid ${running ? 'oklch(72% 0.155 150 / 0.4)' : 'var(--line-1)'}`,
+        borderRadius: 9,
+      }}>
+        <span style={{
+          width: 8, height: 8, borderRadius: 999,
+          background: running ? 'var(--ok)' : 'var(--ink-4)',
+          boxShadow: running ? '0 0 8px oklch(72% 0.155 150 / 0.7)' : 'none',
+          flexShrink: 0,
+        }} />
+        <div style={{ flex: 1 }}>
+          <div style={{
+            fontSize: 12, fontWeight: 600, color: 'var(--ink-1)',
+            fontFamily: 'var(--font-mono)', letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+          }}>
+            {running ? 'Bot running' : 'Bot stopped'}
+          </div>
+          <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 2 }}>
+            {running
+              ? 'Send a message to your bot — it will appear as a new chat in MacVis.'
+              : 'Click Start to bring the bot online.'}
+          </div>
+        </div>
+        <button
+          onClick={running ? handleStop : handleStart}
+          disabled={busy}
+          style={{
+            padding: '7px 14px', borderRadius: 7,
+            border: '1px solid',
+            borderColor: running ? 'var(--err)' : 'var(--accent)',
+            background: running ? 'oklch(68% 0.22 25 / 0.12)' : 'var(--accent)',
+            color: running ? 'var(--err)' : 'oklch(98% 0 0)',
+            fontSize: 12, fontWeight: 600,
+            cursor: busy ? 'wait' : 'pointer',
+            display: 'flex', alignItems: 'center', gap: 6,
+            letterSpacing: '-0.005em',
+            boxShadow: running ? 'none' : 'inset 0 1px 0 oklch(95% 0.05 25 / 0.3), 0 0 12px var(--accent-glow)',
+          }}
+        >
+          {busy ? <Loader size={11} className="spin" /> :
+           running ? <Square size={11} fill="currentColor" /> :
+           <Play size={11} fill="currentColor" />}
+          <span>{running ? 'Stop' : 'Start'}</span>
+        </button>
+      </div>
+
+      {error && (
+        <div style={{
+          marginTop: 10, padding: '8px 10px',
+          background: 'oklch(68% 0.22 25 / 0.08)',
+          border: '1px solid oklch(68% 0.22 25 / 0.3)',
+          borderRadius: 6,
+          fontSize: 11.5, color: 'var(--err)',
+          display: 'flex', alignItems: 'flex-start', gap: 6,
+        }}>
+          <AlertCircle size={12} style={{ flexShrink: 0, marginTop: 1 }} />
+          <span style={{ wordBreak: 'break-word' }}>{error}</span>
+        </div>
+      )}
     </div>
   )
 }
@@ -593,7 +605,6 @@ export function Settings() {
   const tabs: { id: Tab; label: string }[] = [
     { id: 'chat', label: 'Chat API Keys' },
     { id: 'other', label: 'Other Keys' },
-    { id: 'mcps', label: 'Integrations' },
     { id: 'telegram', label: 'Telegram' },
     { id: 'appearance', label: 'Appearance' },
   ]
@@ -620,16 +631,6 @@ export function Settings() {
   }
   const chain: string[] = config.models?.chain || []
 
-  const mcps = [
-    { name: 'github', displayName: 'GitHub', icon: '🐙', description: 'Repos, PRs, issues, Actions', tokenKey: 'mcps.github.token', tokenLabel: 'Personal Access Token (ghp_…)' },
-    { name: 'supabase', displayName: 'Supabase', icon: '🟢', description: 'Database, auth, storage, edge functions', tokenKey: 'mcps.supabase.serviceKey', tokenLabel: 'Service Key' },
-    { name: 'vercel', displayName: 'Vercel', icon: '▲', description: 'Deploy projects, manage domains', tokenKey: 'mcps.vercel.token', tokenLabel: 'Access Token' },
-    { name: 'railway', displayName: 'Railway', icon: '🚂', description: 'Deploy services, manage databases', tokenKey: 'mcps.railway.token', tokenLabel: 'API Token' },
-    { name: 'slack', displayName: 'Slack', icon: '💬', description: 'Send messages, read channels', tokenKey: 'mcps.slack.botToken', tokenLabel: 'Bot Token' },
-    { name: 'cloudflare', displayName: 'Cloudflare', icon: '🌤', description: 'DNS, Workers, Pages, R2', tokenKey: 'mcps.cloudflare.apiToken', tokenLabel: 'API Token' },
-    { name: 'netlify', displayName: 'Netlify', icon: '🔷', description: 'Deploy sites, forms, functions', tokenKey: 'mcps.netlify.token', tokenLabel: 'Auth Token' },
-    { name: 'stripe', displayName: 'Stripe', icon: '💳', description: 'Payments, customers, subscriptions', tokenKey: 'mcps.stripe.secretKey', tokenLabel: 'Secret Key' },
-  ]
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--surface-2)' }}>
@@ -750,28 +751,6 @@ export function Settings() {
             </>
           )}
 
-          {tab === 'mcps' && (
-            <Section title="Developer Platforms" hint="Enable integrations to give the agent access to your tools. Full MCP connectivity lands in Phase 4.">
-              {mcps.map(mcp => (
-                <MCPCard
-                  key={mcp.name}
-                  {...mcp}
-                  enabled={config.mcps?.[mcp.name]?.enabled || false}
-                  token={
-                    config.mcps?.[mcp.name]?.token ||
-                    config.mcps?.[mcp.name]?.serviceKey ||
-                    config.mcps?.[mcp.name]?.botToken ||
-                    config.mcps?.[mcp.name]?.apiToken ||
-                    config.mcps?.[mcp.name]?.secretKey ||
-                    ''
-                  }
-                  onToggle={(name: string, val: boolean) => set(`mcps.${name}.enabled`, val)}
-                  onTokenSave={set}
-                />
-              ))}
-            </Section>
-          )}
-
           {tab === 'telegram' && (
             <>
               <Section title="Setup">
@@ -797,6 +776,10 @@ export function Settings() {
               <Section title="Configuration">
                 <KeyInput label="Bot Token" hint="From @BotFather" configKey="apiKeys.telegram.botToken" value={config.apiKeys?.telegram?.botToken || ''} onSave={set} placeholder="1234567890:ABC..." />
                 <KeyInput label="Allowed User ID" hint="Your numeric Telegram user ID" configKey="apiKeys.telegram.allowedUserId" value={config.apiKeys?.telegram?.allowedUserId || ''} onSave={set} placeholder="123456789" />
+              </Section>
+
+              <Section title="Bot Control" hint="Start the bot to receive messages on Telegram. Each Telegram conversation becomes a chat session in MacVis.">
+                <TelegramControls />
               </Section>
 
               <Section title="Startup">
