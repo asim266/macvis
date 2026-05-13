@@ -1,13 +1,23 @@
-import Anthropic from '@anthropic-ai/sdk'
 import { getMainWindow } from '../../main'
 import { ConfigStore } from '../config/ConfigStore'
 import { ToolBuilder } from './ToolBuilder'
 import { executeTool } from '../tools'
-import { SessionStore, type PersistedMessage, type PersistedSession } from '../sessions/SessionStore'
+import { SessionStore, type PersistedMessage } from '../sessions/SessionStore'
 import { ProjectManager } from '../projects/ProjectManager'
+import { getProvider, parseProviderModel, type ProviderName } from './providers'
+import type { CommonMessage, ContentBlock, FinalMessage } from './providers/types'
 import os from 'os'
 
-const DEFAULT_MODEL = 'claude-opus-4-5'
+const DEFAULT_CHAIN_FALLBACK = 'anthropic:claude-opus-4-5'
+
+const PROVIDER_KEY_PATH: Record<ProviderName, string> = {
+  anthropic: 'apiKeys.anthropic',
+  openai: 'apiKeys.openai',
+  openrouter: 'apiKeys.openrouter',
+  gemini: 'apiKeys.gemini',
+  groq: 'apiKeys.groq',
+  ollama: 'apiKeys.ollama',
+}
 
 function buildSystemPrompt(): string {
   const home = os.homedir()
@@ -36,15 +46,47 @@ You have access to the full conversation history in this session. Reference what
 `
 }
 
+// Build the fallback chain — list of [provider, model] to try in order.
+function resolveChain(config: ConfigStore): Array<{ provider: ProviderName; model: string }> {
+  const chain: string[] = (config.get('models.chain') as string[]) || []
+  const resolved: Array<{ provider: ProviderName; model: string }> = []
+
+  for (const slot of chain) {
+    if (!slot) continue
+    const parsed = parseProviderModel(slot)
+    if (parsed) resolved.push(parsed)
+  }
+
+  // Fallback: use the legacy models.default + models.provider
+  if (resolved.length === 0) {
+    const provider = (config.get('models.provider') as ProviderName) || 'anthropic'
+    const model = (config.get('models.default') as string) || 'claude-opus-4-5'
+    const parsed = parseProviderModel(`${provider}:${model}`) || parseProviderModel(DEFAULT_CHAIN_FALLBACK)!
+    resolved.push(parsed)
+  }
+
+  return resolved
+}
+
 export class AgentLoop {
   private running = new Map<string, boolean>()
 
   async run(message: string, sessionId: string) {
     const config = ConfigStore.getInstance()
-    const apiKey = config.get('apiKeys.anthropic') as string
+    const chain = resolveChain(config)
 
-    if (!apiKey) {
-      this.emit('agent:error', { error: 'No Anthropic API key set. Go to Settings.', sessionId })
+    // Verify at least one provider has a key set
+    const usableChain = chain.filter(c => {
+      if (c.provider === 'ollama') return true
+      const key = config.get(PROVIDER_KEY_PATH[c.provider]) as string
+      return !!key
+    })
+
+    if (usableChain.length === 0) {
+      this.emit('agent:error', {
+        error: 'No API keys configured for any model in your fallback chain. Go to Settings → Chat API Keys.',
+        sessionId,
+      })
       this.emit('agent:done', { sessionId })
       return
     }
@@ -66,7 +108,6 @@ export class AgentLoop {
       session.title = message.slice(0, 50)
     }
 
-    // Append user message to session
     const userMsg: PersistedMessage = {
       id: `msg_${Date.now()}_u`,
       role: 'user',
@@ -77,22 +118,34 @@ export class AgentLoop {
     session.updatedAt = Date.now()
     SessionStore.save(session)
 
-    // Build messages for the API from full session history
-    const apiMessages: any[] = []
+    // Build common-format messages from session history
+    const apiMessages: CommonMessage[] = []
     for (const m of session.messages) {
       if (m.role === 'user' && !m.toolResults) {
         apiMessages.push({ role: 'user', content: m.content })
       } else if (m.role === 'user' && m.toolResults) {
-        // synthetic tool-result user message
-        apiMessages.push({ role: 'user', content: m.toolResults })
+        // Synthetic tool-result user message
+        const content: ContentBlock[] = m.toolResults.map(tr => ({
+          type: 'tool_result' as const,
+          tool_use_id: tr.tool_use_id,
+          content: tr.content,
+        }))
+        apiMessages.push({ role: 'user', content })
       } else if (m.role === 'assistant' && m.apiBlocks) {
-        apiMessages.push({ role: 'assistant', content: m.apiBlocks })
+        // Replay assistant blocks (text + tool_use)
+        const content: ContentBlock[] = []
+        for (const block of m.apiBlocks) {
+          if (block.type === 'text') content.push({ type: 'text', text: block.text })
+          else if (block.type === 'tool_use') {
+            content.push({ type: 'tool_use', id: block.id, name: block.name, input: block.input })
+          }
+        }
+        apiMessages.push({ role: 'assistant', content })
       } else if (m.role === 'assistant') {
         apiMessages.push({ role: 'assistant', content: m.content || ' ' })
       }
     }
 
-    const client = new Anthropic({ apiKey })
     const tools = await ToolBuilder.buildAll(config)
     const systemPrompt = buildSystemPrompt()
 
@@ -100,7 +153,6 @@ export class AgentLoop {
 
     try {
       while (this.running.get(sessionId)) {
-        // Create the assistant message slot for this turn (one per loop iteration)
         assistantMsg = {
           id: `msg_${Date.now()}_a`,
           role: 'assistant',
@@ -113,44 +165,84 @@ export class AgentLoop {
         session.updatedAt = Date.now()
         SessionStore.save(session)
 
-        const stream = await client.messages.stream({
-          model: (config.get('models.default') as string) || DEFAULT_MODEL,
-          max_tokens: 8096,
-          system: systemPrompt,
-          tools,
-          messages: apiMessages,
-        })
+        // Try providers in fallback chain order
+        let finalMsg: FinalMessage | null = null
+        let lastErr: any = null
+        let usedProvider: ProviderName | null = null
+        let usedModel: string | null = null
 
-        for await (const chunk of stream) {
-          if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-            this.emit('agent:stream', { type: 'text', content: chunk.delta.text, sessionId })
-            assistantMsg!.content += chunk.delta.text
-            SessionStore.save(session)
+        for (const slot of usableChain) {
+          const apiKey = config.get(PROVIDER_KEY_PATH[slot.provider]) as string
+          try {
+            this.emit('agent:status', {
+              sessionId,
+              status: 'thinking',
+              provider: slot.provider,
+              model: slot.model,
+            })
+
+            const provider = getProvider(slot.provider)
+            finalMsg = await provider.stream({
+              apiKey: apiKey || '',
+              model: slot.model,
+              system: systemPrompt,
+              messages: apiMessages,
+              tools,
+            }, {
+              onText: (t) => {
+                this.emit('agent:stream', { type: 'text', content: t, sessionId })
+                assistantMsg!.content += t
+                SessionStore.save(session!)
+              },
+              onToolStart: (id, name, input) => {
+                this.emit('agent:tool', { id, name, input, status: 'running', sessionId })
+              },
+            })
+            usedProvider = slot.provider
+            usedModel = slot.model
+            break  // success — exit fallback loop
+          } catch (err: any) {
+            lastErr = err
+            console.error(`Provider ${slot.provider}/${slot.model} failed:`, err.message)
+            // Clear any partial streamed text so the fallback gets a clean slate
+            if (assistantMsg!.content) {
+              this.emit('agent:stream', { type: 'reset', sessionId })
+              assistantMsg!.content = ''
+            }
+            this.emit('agent:status', {
+              sessionId,
+              status: 'fallback',
+              provider: slot.provider,
+              model: slot.model,
+              error: err.message,
+            })
+            // Try next provider in chain
+            continue
           }
         }
 
-        const finalMessage = await stream.finalMessage()
-        assistantMsg.apiBlocks = finalMessage.content
-        // Re-derive content from text blocks (more accurate)
-        assistantMsg.content = finalMessage.content
-          .filter((b: any) => b.type === 'text')
-          .map((b: any) => b.text)
-          .join('')
+        if (!finalMsg) {
+          throw lastErr || new Error('All providers in the fallback chain failed.')
+        }
+
+        assistantMsg.apiBlocks = finalMsg.content
+        assistantMsg.content = finalMsg.text
+
+        // Emit which provider/model actually answered (for status bar)
+        this.emit('agent:provider', { sessionId, provider: usedProvider, model: usedModel })
 
         // Push to API messages array for next iteration
-        apiMessages.push({ role: 'assistant', content: finalMessage.content })
+        apiMessages.push({ role: 'assistant', content: finalMsg.content })
 
-        if (finalMessage.stop_reason !== 'tool_use') {
+        if (finalMsg.stopReason !== 'tool_use' || finalMsg.toolUses.length === 0) {
           await SessionStore.saveNow(session)
           break
         }
 
-        // Execute tool calls
-        const toolUseBlocks = finalMessage.content.filter((b: any) => b.type === 'tool_use') as any[]
+        // Execute tools
         const toolResults: { type: 'tool_result'; tool_use_id: string; content: string }[] = []
 
-        for (const toolUse of toolUseBlocks) {
-          // Add to assistant message's toolCalls list (for UI)
+        for (const toolUse of finalMsg.toolUses) {
           assistantMsg.toolCalls!.push({
             id: toolUse.id,
             name: toolUse.name,
@@ -173,13 +265,8 @@ export class AgentLoop {
           }
 
           const resultStr = typeof result === 'string' ? result : JSON.stringify(result)
-
-          // Update tool call in session
           const tc = assistantMsg.toolCalls!.find(t => t.id === toolUse.id)
-          if (tc) {
-            tc.result = resultStr
-            tc.status = 'done'
-          }
+          if (tc) { tc.result = resultStr; tc.status = 'done' }
 
           this.emit('agent:tool', {
             id: toolUse.id,
@@ -199,7 +286,6 @@ export class AgentLoop {
 
         SessionStore.save(session)
 
-        // Append tool results as a synthetic user message in session and api array
         const toolResultMsg: PersistedMessage = {
           id: `msg_${Date.now()}_tr`,
           role: 'user',
@@ -208,7 +294,15 @@ export class AgentLoop {
           timestamp: Date.now(),
         }
         session.messages.push(toolResultMsg)
-        apiMessages.push({ role: 'user', content: toolResults })
+
+        // Add to apiMessages for next iteration
+        const resultBlocks: ContentBlock[] = toolResults.map(tr => ({
+          type: 'tool_result' as const,
+          tool_use_id: tr.tool_use_id,
+          content: tr.content,
+        }))
+        apiMessages.push({ role: 'user', content: resultBlocks })
+
         SessionStore.save(session)
       }
     } catch (err: any) {

@@ -57,8 +57,12 @@ export function Chat() {
     const unsubs: (() => void)[] = []
 
     unsubs.push(window.macvis.agent.onStream((data: any) => {
-      if (data.sessionId === activeSessionId && data.type === 'text') {
+      if (data.sessionId !== activeSessionId) return
+      if (data.type === 'text') {
         appendStream(activeSessionId, assistantId, data.content)
+      } else if (data.type === 'reset') {
+        // Provider failed mid-stream; wipe the partial assistant content for fallback
+        useChatStore.getState().resetMessageContent(activeSessionId, assistantId)
       }
     }))
 

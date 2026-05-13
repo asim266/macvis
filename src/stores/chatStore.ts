@@ -42,6 +42,7 @@ interface ChatStore {
   deleteSession: (id: string) => Promise<void>
   addMessage: (sessionId: string, msg: Omit<Message, 'id' | 'timestamp'>) => string
   appendStream: (sessionId: string, messageId: string, text: string) => void
+  resetMessageContent: (sessionId: string, messageId: string) => void
   addOrUpdateToolCall: (sessionId: string, messageId: string, toolCall: Omit<ToolCall, 'id'> & { id?: string }) => void
   updateSessionTitle: (sessionId: string, title: string) => void
   setStreaming: (v: boolean) => void
@@ -149,6 +150,21 @@ export const useChatStore = create<ChatStore>((set, get) => ({
               ...session,
               messages: session.messages.map(m =>
                 m.id === messageId ? { ...m, content: m.content + text } : m
+              ),
+            }
+          : session
+      ),
+    }))
+  },
+
+  resetMessageContent: (sessionId, messageId) => {
+    set(s => ({
+      sessions: s.sessions.map(session =>
+        session.id === sessionId
+          ? {
+              ...session,
+              messages: session.messages.map(m =>
+                m.id === messageId ? { ...m, content: '', toolCalls: [] } : m
               ),
             }
           : session

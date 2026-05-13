@@ -4,49 +4,88 @@
 
 **A local-first, fully-agentic AI assistant for macOS.**
 
-Bring-your-own-key. No backend. No telemetry. Full Mac access.
+Bring-your-own-key. Multi-provider. No backend. No telemetry. Full Mac access.
 
-[![License](https://img.shields.io/badge/license-MIT-red.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-macOS-lightgrey.svg)](#)
-[![Built with](https://img.shields.io/badge/built%20with-Electron%20%2B%20React-red.svg)](#)
+[![License: MIT](https://img.shields.io/badge/license-MIT-red.svg)](LICENSE)
+[![Platform: macOS](https://img.shields.io/badge/platform-macOS-lightgrey.svg)](#)
+[![Built with: Electron + React](https://img.shields.io/badge/built%20with-Electron%20%2B%20React-red.svg)](#)
+[![Providers](https://img.shields.io/badge/providers-6-red.svg)](#multi-provider-with-fallback)
 
 </div>
+
+> *Like Claude Desktop or ChatGPT for Mac — but you own the agent, your data, and the model choice.*
 
 ---
 
 ## What is MacVis?
 
-MacVis is a desktop AI assistant that runs natively on your Mac. It's like having Claude or ChatGPT, but with **full access to your machine** — bash, filesystem, web search, browser automation, and developer platforms (GitHub, Vercel, Supabase, etc.) via MCP.
+MacVis is a native macOS desktop assistant that runs the same kind of agentic loop you get from Claude or ChatGPT — only it lives entirely on your machine. The agent has full access to **bash**, your **filesystem**, **web search**, and your **developer platforms** via MCP. Every chat, every project, every API key stays on your Mac.
 
-It's designed as a local-first alternative to cloud agent platforms: your conversations, projects, and credentials never leave your machine.
-
-```
-┌────────────────────────────────────────────┐
-│  🦞 MacVis                                  │
-│                                            │
-│  💬  Chat with full Mac access              │
-│  📁  Projects you build, kept locally       │
-│  🔌  MCP integrations (BYOK)                │
-│  📡  Telegram remote control                │
-│  🧠  Persistent memory across sessions      │
-└────────────────────────────────────────────┘
-```
+Built for developers who want a real agent to drive their environment, without sending their workspace to a third party.
 
 ## Highlights
 
-- **Full Mac access** — bash, filesystem, web search out of the box. Browser automation via Playwright (Phase 3).
-- **BYOK, multi-provider** — Anthropic, OpenAI, OpenRouter, Gemini, Groq, Ollama. Add your keys, validate them, pick a model.
-- **Live key validation** — every key has a one-click "Test" that hits the provider's `/models` endpoint and fetches the actual list of models you have access to.
-- **Persistent memory** — every chat is saved to `~/.macvis/sessions/`. Reopen the app, your history is there. The agent remembers what it created in past turns.
-- **Projects view** — every code project the agent creates lands in `~/.macvis/workspace/projects/` and shows up in a dedicated Projects page with one-click open in browser / editor / Finder, plus a Run button for HTML / Node / Next / Python projects.
-- **MCP-ready** — first-class config for GitHub, Supabase, Vercel, Railway, Slack, Cloudflare, Netlify, Stripe (full connectivity in Phase 4).
-- **Telegram remote** — single-user-gated bot for full agent access from your phone (Phase 7).
-- **No database** — everything is flat JSON in `~/.macvis/`. Inspect it, back it up, sync it however you want.
-- **Distinctive UI** — refined dark theme, custom red accent, Geist typography, no Inter slop.
+- 🧠 **Multi-provider with fallback** — pick a primary, secondary, and tertiary model. If the primary rate-limits or errors out, MacVis automatically falls back to the next.
+- 🔑 **6 providers, BYOK** — Anthropic (Claude), OpenAI (GPT), OpenRouter (200+ models), Google Gemini, Groq (fast Llama/Mixtral), Ollama (local).
+- ✅ **Live key validation** — every key has a one-click *Test* button that hits the provider's `/models` endpoint and pulls in the actual model list you have access to.
+- 💾 **Persistent memory** — every chat is saved to `~/.macvis/sessions/`. Reopen the app and your history is there. The agent remembers what it built in prior turns.
+- 📁 **Projects view** — every code project the agent creates goes to `~/.macvis/workspace/projects/` and shows up in a dedicated Projects page with one-click *Open in Browser / Editor / Finder* plus *Run* for HTML/Node/Next/Python projects.
+- 🔌 **MCP-ready** — first-class config for GitHub, Supabase, Vercel, Railway, Slack, Cloudflare, Netlify, Stripe (Phase 4 wires up live connections).
+- 📡 **Telegram remote** — single-user-gated bot for full agent access from your phone (Phase 7).
+- 🚫 **No database, no telemetry** — everything is flat JSON in `~/.macvis/`. Inspect, back up, sync — you own it.
+- 🎨 **Distinctive UI** — refined dark theme with warm-red accent, Geist typography, OKLCH-based design tokens. Inspired by Linear and Raycast.
 
 ## Screenshots
 
-> Add screenshots here once you've built and run the app.
+<!--
+Place screenshots in docs/screenshots/ and they will render here.
+-->
+
+<div align="center">
+
+<img src="docs/screenshots/01-chat.png" alt="MacVis Chat" width="800" />
+
+*Agent creating a project — tool calls render inline as terminal-style cards*
+
+<img src="docs/screenshots/02-projects.png" alt="Projects" width="800" />
+
+*Every project the agent creates appears here with one-click run, open, and delete*
+
+<img src="docs/screenshots/03-settings.png" alt="Chat API Keys Settings" width="800" />
+
+*Multi-provider settings — add keys, test them, pick a model, build a fallback chain*
+
+</div>
+
+## Multi-provider with fallback
+
+MacVis routes every chat turn through a configurable **fallback chain** of up to 3 model providers:
+
+```
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│  Primary     │ ─▶ │  Secondary   │ ─▶ │  Tertiary    │
+│  (try first) │    │  (on fail)   │    │  (last resort)│
+└──────────────┘    └──────────────┘    └──────────────┘
+```
+
+Set them in **Settings → Chat API Keys → Fallback Chain**. Examples:
+
+| Use case | Chain |
+|---|---|
+| Highest quality with safety net | Anthropic Opus → OpenAI GPT-5 → OpenRouter Sonnet |
+| Cheap + cheerful | Groq Llama → Gemini Flash → OpenAI Mini |
+| Offline-friendly | Ollama → Anthropic Haiku → OpenRouter |
+
+**Supported providers:**
+
+| Provider | Models | Where to get a key |
+|---|---|---|
+| **Anthropic** | Claude 4.5 family (Opus, Sonnet, Haiku) | [console.anthropic.com](https://console.anthropic.com/) |
+| **OpenAI** | GPT-5, GPT-4o, o-series | [platform.openai.com](https://platform.openai.com/api-keys) |
+| **OpenRouter** | 200+ models, one key | [openrouter.ai/keys](https://openrouter.ai/keys) |
+| **Google Gemini** | Gemini 2.5 Pro / Flash | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+| **Groq** | Llama 3.3, Mixtral (very fast) | [console.groq.com](https://console.groq.com/keys) |
+| **Ollama** | Anything you've pulled locally | install [Ollama](https://ollama.com), no key required |
 
 ## Quick Start
 
@@ -65,56 +104,62 @@ pnpm install
 pnpm dev
 ```
 
-The app will open. Go to **Settings → API Keys**, paste your Anthropic key, click **Test**, and you're live.
+The window opens, you go to **Settings → Chat API Keys**, paste at least one key (Anthropic recommended), click *Test*, pick a model, and you're live.
 
-### First steps
+### Your first session
 
-1. Add your Anthropic key in `Settings → API Keys → Anthropic` and click **Test**
-2. (Optional) Add OpenAI / OpenRouter / Gemini / Groq / Ollama keys
-3. Open `Settings → Models` and pick your default model
-4. Go back to Chat and ask MacVis to do something:
-   - *"List my Downloads folder"*
+1. **Settings → Chat API Keys** → paste an API key → click **Test** → pick a model
+2. *(Optional)* Add a second provider for the **Fallback Chain** so retries are automatic
+3. Go to **Chat** and try one of:
    - *"Create a Next.js todo app called my-todo"*
+   - *"Build a landing page for a SaaS"*
+   - *"List my Downloads folder"*
    - *"What's the disk space on this machine?"*
-
-Code projects land in `~/.macvis/workspace/projects/` and show up automatically in the **Projects** tab.
+4. Check the **Projects** tab — anything code-shaped that the agent creates lands here automatically
 
 ## Tech Stack
 
 | Layer | Choice |
 |---|---|
-| **Runtime** | Electron 41 |
-| **Bundler** | electron-vite 5 + Vite 8 |
-| **UI** | React 18 + TypeScript |
-| **Styling** | Tailwind v4, OKLCH-based design tokens |
-| **Typography** | Geist Sans + Geist Mono |
-| **State** | Zustand |
-| **Config store** | `conf` → `~/Library/Application Support/macvis/config.json` |
-| **AI SDK** | `@anthropic-ai/sdk` (more providers coming) |
-| **Package manager** | pnpm |
+| Runtime | Electron 41 |
+| Bundler | electron-vite 5 + Vite 8 |
+| UI | React 18 + TypeScript |
+| Styling | Tailwind v4 + OKLCH design tokens |
+| Typography | Geist Sans + Geist Mono |
+| State | Zustand |
+| Config store | `conf` → `~/Library/Application Support/macvis/config.json` |
+| Model SDKs | `@anthropic-ai/sdk`, `openai`, `@google/generative-ai` |
+| Package manager | pnpm |
 
 ## Architecture
 
 ```
 ~/.macvis/                       ← user data (BYOK home)
-├── sessions/                    ← persisted chat history
+├── sessions/                    ← persisted chat history (JSON per session)
 │   └── <session-id>.json
-├── workspace/projects/          ← projects the agent creates
+├── workspace/projects/          ← code projects the agent creates
 │   └── <project-name>/
-└── skills/                      ← installed skill packs (Phase 6)
+└── skills/                      ← installable skill packs (Phase 6)
 
 macvis/                          ← this repo
 ├── electron/                    ← Node.js main process
 │   ├── core/
-│   │   ├── agent/               ← AgentLoop, ToolBuilder, ProviderValidator
+│   │   ├── agent/
+│   │   │   ├── providers/       ← Provider abstraction
+│   │   │   │   ├── AnthropicProvider.ts
+│   │   │   │   ├── OpenAIProvider.ts   (OpenAI, OpenRouter, Groq, Ollama)
+│   │   │   │   └── GeminiProvider.ts
+│   │   │   ├── AgentLoop.ts     ← Streaming loop + fallback router
+│   │   │   ├── ToolBuilder.ts
+│   │   │   └── ProviderValidator.ts
 │   │   ├── tools/               ← bash, filesystem, web search
 │   │   ├── sessions/            ← persistent chat history
-│   │   ├── projects/            ← project scanner / runner
+│   │   ├── projects/            ← project scanner + runner
 │   │   ├── config/              ← conf wrapper
 │   │   ├── mcp/                 ← MCP client manager (Phase 4)
 │   │   ├── skills/              ← skill loader (Phase 6)
 │   │   └── telegram/            ← Telegraf bot (Phase 7)
-│   ├── ipc/                     ← IPC handlers (one per domain)
+│   ├── ipc/                     ← One IPC handler module per domain
 │   ├── main.ts                  ← BrowserWindow + app boot
 │   └── preload.ts               ← contextBridge → window.macvis.*
 └── src/                         ← React renderer
@@ -132,9 +177,9 @@ The main process owns all I/O, AI calls, and tool execution. The renderer is pur
 |---|---|
 | 1. Electron shell + chat + Anthropic streaming | ✅ |
 | 2. Full settings with multi-provider BYOK + validation | ✅ |
-| 3. Tool system: bash, filesystem, web search, projects | ✅ partial |
-| 3b. Browser automation (Playwright) | ⏳ |
-| 4. MCP manager — spawn & route to MCP servers | ⏳ |
+| 3. Tool system: bash, filesystem, web search, projects, memory | ✅ |
+| 3b. Multi-provider routing with fallback chain | ✅ |
+| 4. MCP manager — live MCP server connectivity | ⏳ |
 | 5. Platform integrations: GitHub, Vercel, Supabase, Railway | ⏳ |
 | 6. Skills loader + Web Builder skill | ⏳ |
 | 7. Telegram remote control | ⏳ |
@@ -142,20 +187,35 @@ The main process owns all I/O, AI calls, and tool execution. The renderer is pur
 
 ## Privacy
 
-- All conversation data stays on your Mac.
+- All conversation data stays on your Mac (`~/.macvis/sessions/`).
 - API keys are stored locally in `~/Library/Application Support/macvis/config.json`.
-- No analytics, no telemetry, no remote logging.
-- Provider validation hits the providers directly from your machine.
+- Provider validation hits the providers directly from your machine; no proxy in between.
+- **No analytics, no telemetry, no remote logging.** Open the network tab — every call is direct to a provider you configured.
+
+## Comparable projects
+
+- **[OpenClaw](https://github.com/openclaw/openclaw)** — similar idea, web-based UI
+- **Claude Desktop** — Anthropic's first-party Mac app (Claude only, no agent loop)
+- **Open WebUI** — local model interface (focused on Ollama)
+- **Cursor / Continue.dev** — agent in editor (different surface)
+
+MacVis is for the case where you want a **standalone desktop agent** with multi-provider routing, persistent memory, and full Mac access — not a chat sidecar to your editor.
 
 ## Contributing
 
 PRs welcome. The code is organized phase-by-phase — pick something off the roadmap or open an issue first to discuss bigger changes.
 
 ```bash
-pnpm dev          # run in dev mode
+pnpm dev          # run in dev mode (Electron + Vite HMR)
 pnpm typecheck    # tsc --noEmit
 pnpm build        # build a .dmg (macOS only)
 ```
+
+Good first issues:
+- Wire up the MCP manager so GitHub/Vercel/etc. actually do work (Phase 4)
+- Add image generation via Nano Banana / Gemini 2.5 Flash Image
+- Write a skill pack (Phase 6 spec)
+- Add screenshot tests with Playwright
 
 ## License
 
@@ -166,5 +226,7 @@ MIT — see [LICENSE](LICENSE).
 <div align="center">
 
 Built by [@asim266](https://github.com/asim266) · Inspired by Claude Desktop, Linear, Raycast, and OpenClaw
+
+⭐ **If you like MacVis, please star the repo — it really helps with discovery.**
 
 </div>
