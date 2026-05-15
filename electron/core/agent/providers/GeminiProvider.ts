@@ -73,6 +73,13 @@ function sanitizeSchema(schema: any): any {
   // A schema with no type AND no properties/items is meaningless to Gemini — drop it
   if (!out.type) return undefined
 
+  // Gemini requires `items` on every `type: 'array'`. Some MCP servers emit
+  // arrays without an items spec (e.g. GitHub MCP's `comments` param). Default
+  // to `{ type: 'string' }` so the call doesn't 400.
+  if (out.type === 'array' && (!out.items || typeof out.items !== 'object')) {
+    out.items = { type: 'string' }
+  }
+
   return out
 }
 
