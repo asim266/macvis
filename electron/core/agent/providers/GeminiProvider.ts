@@ -157,8 +157,18 @@ export class GeminiProvider implements ChatProvider {
     let text = ''
     const toolUses: ToolUseResult[] = []
     const content: ContentBlock[] = []
-    const fired = new Set<string>()
+    const seenFunctionCalls = new Set<string>()  // dedup by name+args signature
     let toolUseCount = 0
+
+    const addFunctionCall = (fc: { name: string; args?: any }) => {
+      const sig = `${fc.name}::${JSON.stringify(fc.args || {})}`
+      if (seenFunctionCalls.has(sig)) return
+      seenFunctionCalls.add(sig)
+      const id = `gemini_${Date.now()}_${++toolUseCount}`
+      handlers.onToolStart(id, fc.name, fc.args || {})
+      content.push({ type: 'tool_use', id, name: fc.name, input: fc.args || {} })
+      toolUses.push({ id, name: fc.name, input: fc.args || {} })
+    }
 
     for await (const chunk of result.stream) {
       const candidates = chunk.candidates || []
@@ -170,24 +180,51 @@ export class GeminiProvider implements ChatProvider {
             text += p.text
           }
           if ((p as any).functionCall) {
-            const fc = (p as any).functionCall
-            // Gemini doesn't give us an id, synthesize one
-            const id = `gemini_${Date.now()}_${++toolUseCount}`
-            if (!fired.has(id)) {
-              fired.add(id)
-              handlers.onToolStart(id, fc.name, fc.args || {})
-              content.push({ type: 'tool_use', id, name: fc.name, input: fc.args || {} })
-              toolUses.push({ id, name: fc.name, input: fc.args || {} })
-            }
+            addFunctionCall((p as any).functionCall)
           }
         }
       }
     }
 
+    // Fallback: in some Gemini versions, function calls only show up in the
+    // final response (not in the stream chunks). Re-scan once.
+    const final = await result.response
+    const finalCandidate = final.candidates?.[0]
+    const finishReason = finalCandidate?.finishReason
+    const finalParts = finalCandidate?.content?.parts || []
+    for (const p of finalParts) {
+      if ((p as any).functionCall) {
+        addFunctionCall((p as any).functionCall)
+      }
+      // Also pick up any text the streamer might have missed
+      if (p.text && !text.includes(p.text)) {
+        handlers.onText(p.text)
+        text += p.text
+      }
+    }
+
     if (text) content.unshift({ type: 'text', text })
 
-    const final = await result.response
-    const finishReason = final.candidates?.[0]?.finishReason
+    // If Gemini returned ZERO content (no text, no tool call), surface a
+    // diagnostic so the user sees WHY the bubble is empty instead of nothing.
+    if (content.length === 0) {
+      const blockReason = final.promptFeedback?.blockReason
+      const safetyRatings = (finalCandidate?.safetyRatings || [])
+        .filter((r: any) => r.blocked || r.probability === 'HIGH')
+        .map((r: any) => r.category)
+      let reason = ''
+      if (blockReason) reason = `prompt blocked: ${blockReason}`
+      else if (finishReason === 'SAFETY') reason = `safety filter: ${safetyRatings.join(', ') || 'unknown'}`
+      else if (finishReason === 'RECITATION') reason = 'recitation filter'
+      else if (finishReason === 'OTHER') reason = 'unspecified Gemini error'
+      else if (finishReason === 'MAX_TOKENS') reason = 'hit max_tokens before any output'
+      else reason = `empty response (finishReason=${finishReason || 'unknown'}). Try rephrasing or switch to a different model in Settings → Chat API Keys → Fallback Chain.`
+
+      const note = `_Gemini returned an empty response — ${reason}_`
+      handlers.onText(note)
+      text = note
+      content.push({ type: 'text', text: note })
+    }
 
     return {
       content,
@@ -195,7 +232,7 @@ export class GeminiProvider implements ChatProvider {
       text,
       stopReason: toolUses.length > 0 ? 'tool_use' :
                   finishReason === 'MAX_TOKENS' ? 'max_tokens' : 'end_turn',
-      raw: { finishReason },
+      raw: { finishReason, blockReason: final.promptFeedback?.blockReason },
     }
   }
 }

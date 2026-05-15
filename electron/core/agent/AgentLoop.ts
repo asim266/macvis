@@ -36,6 +36,20 @@ For example, if GitHub is connected:
 
 Only fall back to bash for a connected service if the specific MCP tool you need doesn't exist.
 
+## Acting on user-provided information
+
+When you ask the user a question (e.g. "what's your GitHub username?") and the
+user replies with a short answer in the next turn (e.g. "asim266"), treat that
+reply as the answer to your prior question. Do NOT ask another question or
+produce an empty response. Immediately use that info to complete the original
+task — typically by making the tool call you were preparing.
+
+Example flow that must work:
+- User: "List my GitHub repos"
+- You: "What's your GitHub username?"
+- User: "asim266"
+- You: [call \`github__search_repositories\` with query \`"user:asim266"\`] then summarise.
+
 ## Identifying the user on an MCP service
 
 **The macOS system username is NOT the same as the user authenticated to an MCP service.** Don't ever assume \`whoami\` (e.g. the macOS login name) equals the GitHub/Vercel/Supabase/etc. account username.
