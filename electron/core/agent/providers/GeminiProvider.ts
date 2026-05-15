@@ -1,20 +1,99 @@
 import { GoogleGenerativeAI, type Tool as GeminiTool } from '@google/generative-ai'
 import type { ChatProvider, StreamOptions, StreamHandlers, FinalMessage, ContentBlock, CommonMessage, ToolUseResult } from './types'
 
-// Strip JSON Schema fields Gemini doesn't accept ($schema, additionalProperties, etc.)
+// Gemini's function-declaration parameter schema is a SUBSET of JSON Schema.
+// Anything outside the supported set causes 400 Bad Request. Use a strict allowlist.
+// Reference: https://ai.google.dev/api/caching#Schema
+const ALLOWED_SCHEMA_FIELDS = new Set([
+  'type', 'description', 'enum', 'properties', 'required', 'items', 'nullable',
+  'format',   // limited — accepted for 'string' (enum-like), 'integer' (int32/int64), 'number' (float/double)
+  'title',
+  // anyOf is supported on recent versions; ignore oneOf/allOf which are not
+  'anyOf',
+])
+
+const GEMINI_TYPES = new Set(['string', 'number', 'integer', 'boolean', 'array', 'object'])
+
 function sanitizeSchema(schema: any): any {
-  if (!schema || typeof schema !== 'object') return schema
-  if (Array.isArray(schema)) return schema.map(sanitizeSchema)
+  if (schema === null || schema === undefined) return undefined
+  if (typeof schema !== 'object') return schema
+  if (Array.isArray(schema)) return schema.map(sanitizeSchema).filter(v => v !== undefined)
+
   const out: any = {}
+
   for (const [k, v] of Object.entries(schema)) {
-    if (k === '$schema' || k === 'additionalProperties' || k === '$ref') continue
-    out[k] = sanitizeSchema(v)
+    if (!ALLOWED_SCHEMA_FIELDS.has(k)) continue   // drop unknown / unsupported fields
+
+    if (k === 'type') {
+      // Handle JSON Schema's `type: ['string', 'null']` array form.
+      if (Array.isArray(v)) {
+        const types = (v as string[]).filter(t => t !== 'null')
+        if ((v as string[]).includes('null')) out.nullable = true
+        const t = types[0]
+        if (t && GEMINI_TYPES.has(t)) out.type = t
+      } else if (typeof v === 'string') {
+        if (v === 'null') out.nullable = true
+        else if (GEMINI_TYPES.has(v)) out.type = v
+        // unknown types silently dropped
+      }
+    } else if (k === 'properties' && typeof v === 'object' && v) {
+      const propsIn = v as Record<string, any>
+      const propsOut: Record<string, any> = {}
+      for (const [pk, pv] of Object.entries(propsIn)) {
+        const cleaned = sanitizeSchema(pv)
+        if (cleaned !== undefined) propsOut[pk] = cleaned
+      }
+      out.properties = propsOut
+    } else if (k === 'items') {
+      out.items = sanitizeSchema(v)
+    } else if (k === 'anyOf' && Array.isArray(v)) {
+      // Only keep if at least one variant survives sanitization
+      const variants = v.map(sanitizeSchema).filter(x => x && typeof x === 'object')
+      if (variants.length > 0) out.anyOf = variants
+    } else if (k === 'enum' && Array.isArray(v)) {
+      // Gemini supports enum only for type: string. Coerce values to strings.
+      out.enum = (v as any[]).map(x => x === null ? null : String(x))
+    } else if (k === 'required' && Array.isArray(v)) {
+      out.required = (v as any[]).filter(x => typeof x === 'string')
+    } else if (k === 'description' || k === 'title') {
+      if (typeof v === 'string') out[k] = v.slice(0, 1024)   // cap length
+    } else if (k === 'format' && typeof v === 'string') {
+      // Pass through only the formats Gemini accepts
+      if (['enum', 'int32', 'int64', 'float', 'double'].includes(v)) out.format = v
+    } else if (k === 'nullable' && typeof v === 'boolean') {
+      out.nullable = v
+    }
   }
+
+  // Gemini requires `type` on every schema node. If it was dropped (because it
+  // was an unsupported type or missing), infer it.
+  if (out.properties && !out.type) out.type = 'object'
+  if (out.items && !out.type) out.type = 'array'
+
+  // A schema with no type AND no properties/items is meaningless to Gemini — drop it
+  if (!out.type) return undefined
+
   return out
+}
+
+// Validate that a top-level function-declaration parameters object is non-empty.
+// Gemini rejects empty parameter objects on tools that have no inputs.
+function ensureValidParams(schema: any): any {
+  const cleaned = sanitizeSchema(schema)
+  if (!cleaned || cleaned.type !== 'object') {
+    return { type: 'object', properties: {} }
+  }
+  if (!cleaned.properties) cleaned.properties = {}
+  return cleaned
 }
 
 function toGeminiContents(messages: CommonMessage[]): any[] {
   const out: any[] = []
+  // Gemini's functionResponse.name must match the original functionCall.name.
+  // Our common format only carries tool_use_id on tool_result blocks, so we
+  // walk forward building an id → name map from prior tool_use blocks.
+  const idToName = new Map<string, string>()
+
   for (const m of messages) {
     const role = m.role === 'assistant' ? 'model' : 'user'
     if (typeof m.content === 'string') {
@@ -23,15 +102,19 @@ function toGeminiContents(messages: CommonMessage[]): any[] {
     }
     const parts: any[] = []
     for (const b of m.content) {
-      if (b.type === 'text') parts.push({ text: b.text })
-      else if (b.type === 'tool_use') {
-        parts.push({ functionCall: { name: b.name, args: b.input } })
+      if (b.type === 'text') {
+        parts.push({ text: b.text })
+      } else if (b.type === 'tool_use') {
+        // Sanitize the name the same way we did when registering the tool —
+        // otherwise Gemini sees a mismatch.
+        const safeName = b.name.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64)
+        idToName.set(b.id, safeName)
+        parts.push({ functionCall: { name: safeName, args: b.input || {} } })
       } else if (b.type === 'tool_result') {
-        // Tool result needs the original tool name — Gemini uses functionResponse with the function name as id
-        // Convention: encode the name in tool_use_id (or store mapping). For now we strip.
+        const name = idToName.get(b.tool_use_id) || b.tool_use_id
         let parsed: any
         try { parsed = JSON.parse(b.content) } catch { parsed = { result: b.content } }
-        parts.push({ functionResponse: { name: b.tool_use_id, response: parsed } })
+        parts.push({ functionResponse: { name, response: parsed } })
       }
     }
     if (parts.length) out.push({ role, parts })
@@ -46,9 +129,11 @@ export class GeminiProvider implements ChatProvider {
     const client = new GoogleGenerativeAI(opts.apiKey)
     const tools: GeminiTool[] = opts.tools.length > 0 ? [{
       functionDeclarations: opts.tools.map(t => ({
-        name: t.name,
-        description: t.description,
-        parameters: sanitizeSchema(t.input_schema),
+        // Gemini caps function names at 64 chars and only allows [a-zA-Z0-9_-]
+        name: t.name.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64),
+        // Description capped at ~1024 to avoid bloat
+        description: (t.description || '').slice(0, 1024),
+        parameters: ensureValidParams(t.input_schema),
       })),
     }] : []
 
