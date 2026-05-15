@@ -43,7 +43,18 @@ export function Chat() {
     if (!activeSessionId) return
 
     const config = await window.macvis.config.get()
-    if (!config?.apiKeys?.anthropic) {
+    // Check that AT LEAST ONE chat provider has a key configured. The agent's
+    // fallback chain will pick whichever is set. Ollama uses a URL (no key
+    // required) so it counts as "configured" if set.
+    const keys = config?.apiKeys || {}
+    const hasAnyChatKey =
+      !!keys.anthropic ||
+      !!keys.openai ||
+      !!keys.openrouter ||
+      !!keys.gemini ||
+      !!keys.groq ||
+      !!keys.ollama
+    if (!hasAnyChatKey) {
       setNoApiKey(true)
       return
     }
@@ -162,7 +173,7 @@ export function Chat() {
               className="fade-up"
             >
               <span>
-                No Anthropic API key. Open <strong style={{ fontWeight: 600 }}>Settings → API Keys</strong> to add one.
+                No chat-model key configured. Open <strong style={{ fontWeight: 600 }}>Settings → Chat API Keys</strong> and add at least one (Anthropic, OpenAI, Gemini, OpenRouter, Groq, or Ollama).
               </span>
               <button onClick={() => setNoApiKey(false)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', display: 'flex' }}>
                 <X size={14} />
