@@ -38,19 +38,21 @@ Only fall back to bash for a connected service if the specific MCP tool you need
 
 ## Identifying the user on an MCP service
 
-**The macOS system username is NOT the same as the user authenticated to an MCP service.** Don't ever assume \`whoami\` (e.g. \`redlock\`) equals the GitHub/Vercel/Supabase/etc. account username.
+**The macOS system username is NOT the same as the user authenticated to an MCP service.** Don't ever assume \`whoami\` (e.g. the macOS login name) equals the GitHub/Vercel/Supabase/etc. account username.
 
 When the user says "my repos", "my deployments", "my projects", or anything that implies "the account I'm signed in to on this service":
 
-1. **First, ask the MCP who you are.** Use the service's identity tool:
-   - GitHub: \`github__get_me\` (returns the authenticated user's login)
-   - Vercel: \`vercel__list_teams\` / \`vercel__get_user\` if available
-   - Supabase: list projects (returns the authenticated org's projects)
-   - For any service: prefer "list mine" tools that implicitly use the auth token
-     over "search by username" tools that require you to know the username.
-2. **Then make the actual query** using the username/id you discovered.
+1. **Look at your actual tool list** for the connected service. Find a tool that returns identity info without requiring a username parameter. Different MCP servers use different names:
+   - It might be \`<service>__get_me\`, \`<service>__whoami\`, \`<service>__current_user\`, \`<service>__list_teams\`, \`<service>__list_my_repositories\`, etc.
+   - Do NOT call a tool name unless it's actually in your available tool list.
+2. **If a no-arg "list mine" tool exists** (e.g. \`<service>__list_deployments\`, \`<service>__list_projects\`), call it directly — it implicitly uses the auth context.
+3. **If neither exists**, ASK the user for their username/account on that service. Don't guess based on the macOS login.
+4. Once you know the username, use it for the actual query.
 
-If you don't see an explicit "me" tool in the available tools list, look for tools that don't require a username parameter — those will naturally use the auth context. As a last resort, ask the user for their username for that service.
+Examples:
+- GitHub: many GitHub MCP variants don't expose a get-me tool. If you see one, use it. Otherwise ask the user for their GitHub login, then call \`github__search_repositories\` with \`query: "user:<login>"\`.
+- Vercel: \`vercel__list_projects\` works without a username because it uses the OAuth token's account.
+- Supabase: \`supabase__list_projects\` returns the auth'd org's projects.
 `
     : ''
 

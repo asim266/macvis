@@ -268,18 +268,34 @@ export class MCPManager {
       throw new Error(`MCP not connected: ${mcpId}`)
     }
 
-    const result = await mcp.client.callTool({ name: toolName, arguments: args })
-    // result.content is an array of content blocks (text, image, etc.) — flatten to string
-    if (Array.isArray(result.content)) {
-      return result.content
-        .map((c: any) => {
-          if (c.type === 'text') return c.text
-          if (c.type === 'image') return '[image]'
-          return JSON.stringify(c)
-        })
-        .join('\n')
+    // Validate the tool exists on this MCP before forwarding — produces a
+    // clearer error message than the upstream's generic "Unknown tool".
+    const exists = mcp.tools.some(t => t.name === toolName)
+    if (!exists) {
+      const available = mcp.tools.map(t => `${mcpId}__${t.name}`).join(', ')
+      return `Error: tool "${namespacedName}" does not exist on the ${mcp.name} MCP server. ` +
+        `Do not try to call this tool again. Available tools on this MCP: ${available || '(none)'}. ` +
+        `If you needed identity info ("who am I"), there is no such tool here — ask the user for their username instead.`
     }
-    return JSON.stringify(result)
+
+    try {
+      const result = await mcp.client.callTool({ name: toolName, arguments: args })
+      // result.content is an array of content blocks (text, image, etc.) — flatten to string
+      if (Array.isArray(result.content)) {
+        return result.content
+          .map((c: any) => {
+            if (c.type === 'text') return c.text
+            if (c.type === 'image') return '[image]'
+            return JSON.stringify(c)
+          })
+          .join('\n')
+      }
+      return JSON.stringify(result)
+    } catch (err: any) {
+      // Upstream errors (e.g. invalid args, auth failure) — return as a string so
+      // the agent sees them as a tool_result rather than aborting the turn.
+      return `Error calling ${namespacedName}: ${err?.message || String(err)}`
+    }
   }
 
   /** Install a custom MCP from a free-form command */
