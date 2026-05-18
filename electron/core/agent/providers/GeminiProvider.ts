@@ -152,7 +152,18 @@ export class GeminiProvider implements ChatProvider {
 
     const contents = toGeminiContents(opts.messages)
 
-    const result = await model.generateContentStream({ contents })
+    // IMPORTANT: We do NOT use generateContentStream here. The @google/generative-ai
+    // SDK has long-standing bugs with streaming + tool use — function calls often
+    // don't appear in any stream chunk, leading to empty assistant bubbles. The
+    // non-streaming generateContent reliably returns both text AND functionCall
+    // parts in a single response payload. We trade typing-animation UX for
+    // correctness; the AgentLoop is fine with whole-string text deltas.
+    const result = await model.generateContent({ contents })
+
+    const response = result.response
+    const candidate = response.candidates?.[0]
+    const finishReason = candidate?.finishReason
+    const parts = candidate?.content?.parts || []
 
     let text = ''
     const toolUses: ToolUseResult[] = []
@@ -160,56 +171,33 @@ export class GeminiProvider implements ChatProvider {
     const seenFunctionCalls = new Set<string>()  // dedup by name+args signature
     let toolUseCount = 0
 
-    const addFunctionCall = (fc: { name: string; args?: any }) => {
-      const sig = `${fc.name}::${JSON.stringify(fc.args || {})}`
-      if (seenFunctionCalls.has(sig)) return
-      seenFunctionCalls.add(sig)
-      const id = `gemini_${Date.now()}_${++toolUseCount}`
-      handlers.onToolStart(id, fc.name, fc.args || {})
-      content.push({ type: 'tool_use', id, name: fc.name, input: fc.args || {} })
-      toolUses.push({ id, name: fc.name, input: fc.args || {} })
-    }
-
-    for await (const chunk of result.stream) {
-      const candidates = chunk.candidates || []
-      for (const cand of candidates) {
-        const parts = cand.content?.parts || []
-        for (const p of parts) {
-          if (p.text) {
-            handlers.onText(p.text)
-            text += p.text
-          }
-          if ((p as any).functionCall) {
-            addFunctionCall((p as any).functionCall)
-          }
-        }
-      }
-    }
-
-    // Fallback: in some Gemini versions, function calls only show up in the
-    // final response (not in the stream chunks). Re-scan once.
-    const final = await result.response
-    const finalCandidate = final.candidates?.[0]
-    const finishReason = finalCandidate?.finishReason
-    const finalParts = finalCandidate?.content?.parts || []
-    for (const p of finalParts) {
-      if ((p as any).functionCall) {
-        addFunctionCall((p as any).functionCall)
-      }
-      // Also pick up any text the streamer might have missed
-      if (p.text && !text.includes(p.text)) {
-        handlers.onText(p.text)
+    for (const p of parts) {
+      if (p.text) {
         text += p.text
       }
+      if ((p as any).functionCall) {
+        const fc = (p as any).functionCall
+        const sig = `${fc.name}::${JSON.stringify(fc.args || {})}`
+        if (seenFunctionCalls.has(sig)) continue
+        seenFunctionCalls.add(sig)
+        const id = `gemini_${Date.now()}_${++toolUseCount}`
+        handlers.onToolStart(id, fc.name, fc.args || {})
+        content.push({ type: 'tool_use', id, name: fc.name, input: fc.args || {} })
+        toolUses.push({ id, name: fc.name, input: fc.args || {} })
+      }
     }
 
-    if (text) content.unshift({ type: 'text', text })
+    // Emit the whole text at once (no streaming animation for Gemini, but reliable)
+    if (text) {
+      handlers.onText(text)
+      content.unshift({ type: 'text', text })
+    }
 
     // If Gemini returned ZERO content (no text, no tool call), surface a
     // diagnostic so the user sees WHY the bubble is empty instead of nothing.
     if (content.length === 0) {
-      const blockReason = final.promptFeedback?.blockReason
-      const safetyRatings = (finalCandidate?.safetyRatings || [])
+      const blockReason = response.promptFeedback?.blockReason
+      const safetyRatings = (candidate?.safetyRatings || [])
         .filter((r: any) => r.blocked || r.probability === 'HIGH')
         .map((r: any) => r.category)
       let reason = ''
@@ -232,7 +220,7 @@ export class GeminiProvider implements ChatProvider {
       text,
       stopReason: toolUses.length > 0 ? 'tool_use' :
                   finishReason === 'MAX_TOKENS' ? 'max_tokens' : 'end_turn',
-      raw: { finishReason, blockReason: final.promptFeedback?.blockReason },
+      raw: { finishReason, blockReason: response.promptFeedback?.blockReason },
     }
   }
 }
