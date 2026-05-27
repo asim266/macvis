@@ -363,6 +363,25 @@ export const MCP_REGISTRY: MCPServerDef[] = [
 
   // ─── MEDIA ─────────────────────────────────────────────────────────────────
   {
+    id: 'replicate',
+    name: 'Replicate',
+    description: 'Search models, run predictions, inspect outputs',
+    category: 'media',
+    source: 'vendor',
+    icon: '🧬',
+    command: 'npx',
+    args: ['-y', 'replicate-mcp'],
+    env: { REPLICATE_API_TOKEN: 'mcps.replicate.token' },
+    inputs: [{
+      label: 'API Token',
+      configKey: 'mcps.replicate.token',
+      placeholder: 'r8_...',
+      type: 'password',
+      hint: 'Create a token from your Replicate account settings',
+    }],
+    docsUrl: 'https://replicate.com/docs/reference/mcp',
+  },
+  {
     id: 'elevenlabs',
     name: 'ElevenLabs',
     description: 'Text-to-speech, voice cloning',
