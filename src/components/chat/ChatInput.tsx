@@ -30,6 +30,8 @@ async function blobToBase64(blob: Blob): Promise<string> {
   return btoa(bin)
 }
 
+interface Mentionable { label: string; sub: string; insert: string }
+
 export function ChatInput({ onSend, onStop, isStreaming, disabled }: Props) {
   const [value, setValue] = useState('')
   const [focused, setFocused] = useState(false)
@@ -37,6 +39,8 @@ export function ChatInput({ onSend, onStop, isStreaming, disabled }: Props) {
   const [recording, setRecording] = useState(false)
   const [transcribing, setTranscribing] = useState(false)
   const [dragOver, setDragOver] = useState(false)
+  const [mentionables, setMentionables] = useState<Mentionable[]>([])
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null)
   const ref = useRef<HTMLTextAreaElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const recorderRef = useRef<MediaRecorder | null>(null)
@@ -48,10 +52,43 @@ export function ChatInput({ onSend, onStop, isStreaming, disabled }: Props) {
     }
   }, [value])
 
+  // Build @-mention sources: projects + installed skills.
+  useEffect(() => {
+    Promise.all([
+      window.macvis.projects?.list?.().catch(() => []),
+      window.macvis.skills?.list?.().catch(() => []),
+    ]).then(([projects, skills]: any[]) => {
+      const m: Mentionable[] = []
+      for (const p of projects || []) m.push({ label: p.name, sub: 'project', insert: p.path })
+      for (const s of (skills || []).filter((x: any) => x.installed)) m.push({ label: s.id, sub: 'skill', insert: `skill:${s.id}` })
+      setMentionables(m)
+    })
+  }, [])
+
+  const onChange = (v: string) => {
+    setValue(v)
+    const match = /@([\w./-]*)$/.exec(v)
+    setMentionQuery(match ? match[1] : null)
+  }
+
+  const pickMention = (m: Mentionable) => {
+    setValue(v => v.replace(/@([\w./-]*)$/, m.insert + ' '))
+    setMentionQuery(null)
+    ref.current?.focus()
+  }
+
+  const mentionMatches = mentionQuery !== null
+    ? mentionables.filter(m => m.label.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 6)
+    : []
+
   const addFiles = async (files: FileList | File[]) => {
-    const imgs = Array.from(files).filter(f => f.type.startsWith('image/'))
+    const arr = Array.from(files)
+    const imgs = arr.filter(f => f.type.startsWith('image/'))
     const next = await Promise.all(imgs.map(fileToAttachment))
     if (next.length) setAttachments(a => [...a, ...next])
+    // Non-image files: drop their absolute path into the prompt so the agent can read/extract them.
+    const paths = arr.filter(f => !f.type.startsWith('image/')).map((f: any) => f.path).filter(Boolean)
+    if (paths.length) setValue(v => (v ? v + ' ' : '') + paths.join(' ') + ' ')
   }
 
   const send = () => {
@@ -108,6 +145,22 @@ export function ChatInput({ onSend, onStop, isStreaming, disabled }: Props) {
           boxShadow: focused ? '0 0 0 3px var(--accent-soft), 0 4px 16px -4px rgb(0 0 0 / 0.4)' : '0 4px 16px -4px rgb(0 0 0 / 0.4)',
         }}
       >
+        {/* @-mention dropdown */}
+        {mentionMatches.length > 0 && (
+          <div style={{ marginBottom: 10, border: '1px solid var(--line-2)', borderRadius: 8, overflow: 'hidden', background: 'var(--surface-1)' }}>
+            {mentionMatches.map((m, i) => (
+              <button key={i} onMouseDown={e => { e.preventDefault(); pickMention(m) }}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '7px 10px', border: 'none', background: 'transparent', color: 'var(--ink-1)', cursor: 'pointer', fontSize: 12, textAlign: 'left' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-3)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                <span style={{ fontWeight: 600 }}>{m.label}</span>
+                <span style={{ fontSize: 10, color: 'var(--ink-4)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>{m.sub}</span>
+                <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--ink-4)', fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 240 }}>{m.insert}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* attachment chips */}
         {attachments.length > 0 && (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
@@ -126,12 +179,12 @@ export function ChatInput({ onSend, onStop, isStreaming, disabled }: Props) {
         <textarea
           ref={ref}
           value={value}
-          onChange={e => setValue(e.target.value)}
+          onChange={e => onChange(e.target.value)}
           onKeyDown={onKey}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           onPaste={e => { const imgs = Array.from(e.clipboardData.files).filter(f => f.type.startsWith('image/')); if (imgs.length) { e.preventDefault(); addFiles(imgs) } }}
-          placeholder={transcribing ? 'Transcribing…' : recording ? 'Listening… click the mic to stop' : 'Ask MacVis anything…  (drop or paste an image)'}
+          placeholder={transcribing ? 'Transcribing…' : recording ? 'Listening… click the mic to stop' : 'Ask MacVis anything…  (drop files, paste images, @mention projects)'}
           disabled={disabled}
           rows={1}
           style={{ width: '100%', minHeight: 22, background: 'transparent', border: 'none', outline: 'none', resize: 'none', color: 'var(--ink-1)', fontSize: 14, lineHeight: 1.55, fontFamily: 'var(--font-display)', letterSpacing: '-0.005em' }}

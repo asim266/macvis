@@ -9,6 +9,7 @@ import { Skills } from './pages/Skills'
 const Agents = lazy(() => import('./pages/Agents').then(m => ({ default: m.Agents })))
 import { Schedules } from './pages/Schedules'
 import { Terminal } from './pages/Terminal'
+import { Onboarding } from './components/Onboarding'
 import { useChatStore } from './stores/chatStore'
 import { useConfigStore } from './stores/configStore'
 
@@ -17,7 +18,16 @@ export type Page = 'chat' | 'settings' | 'mcps' | 'skills' | 'projects' | 'agent
 export default function App() {
   const [page, setPage] = useState<Page>('chat')
   const loadSessions = useChatStore(s => s.loadSessions)
+  const config = useConfigStore(s => s.config)
+  const loadConfig = useConfigStore(s => s.load)
   const accent = useConfigStore(s => s.config?.ui?.accent || 'green')
+  const [dismissedOnboarding, setDismissedOnboarding] = useState(false)
+
+  useEffect(() => { loadConfig() }, [loadConfig])
+
+  const keys = config?.apiKeys || {}
+  const hasAnyChatKey = !!(keys.anthropic || keys.openai || keys.openrouter || keys.gemini || keys.groq || keys.ollama)
+  const showOnboarding = !!config && !config.ui?.onboarded && !hasAnyChatKey && !dismissedOnboarding
 
   // Apply the theme accent attribute to <html> so [data-accent="..."] CSS rules match
   useEffect(() => {
@@ -55,6 +65,7 @@ export default function App() {
         {page === 'schedules' && <Schedules />}
         {page === 'terminal' && <Terminal />}
       </main>
+      {showOnboarding && <Onboarding onDone={() => setDismissedOnboarding(true)} />}
     </div>
   )
 }

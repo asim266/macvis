@@ -3,6 +3,7 @@ import { unifiedDiff, newFileDiff } from '../electron/core/tools/diff'
 import { parseSkill } from '../electron/core/skills/SkillParser'
 import { checkProtectedPath, pathFromToolInput } from '../electron/core/security/sandbox'
 import { redactSecrets } from '../electron/core/security/redact'
+import { classifyComplexity } from '../electron/core/agent/routing'
 
 describe('unifiedDiff', () => {
   it('reports no changes for identical text', () => {
@@ -65,5 +66,20 @@ describe('redactSecrets', () => {
   })
   it('leaves ordinary text untouched', () => {
     expect(redactSecrets('hello world, no secrets here')).toBe('hello world, no secrets here')
+  })
+})
+
+describe('classifyComplexity', () => {
+  it('treats short questions as simple', () => {
+    expect(classifyComplexity('what time is it?')).toBe('simple')
+    expect(classifyComplexity('summarize this in one line')).toBe('simple')
+  })
+  it('treats code / build tasks as complex', () => {
+    expect(classifyComplexity('refactor the auth module')).toBe('complex')
+    expect(classifyComplexity('write a function to parse CSV')).toBe('complex')
+    expect(classifyComplexity('```js\nconst x = 1\n```')).toBe('complex')
+  })
+  it('treats long prompts as complex', () => {
+    expect(classifyComplexity('a '.repeat(200))).toBe('complex')
   })
 })

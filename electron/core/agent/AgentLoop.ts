@@ -4,6 +4,7 @@ import { ToolBuilder } from './ToolBuilder'
 import { executeTool } from '../tools'
 import { isImageToolResult } from '../tools/types'
 import { AuditLog } from '../audit/AuditLog'
+import { classifyComplexity } from './routing'
 
 const HISTORY_CHAR_BUDGET = 140_000   // ~ keep well under context limits
 const KEEP_RECENT_MESSAGES = 12
@@ -287,6 +288,16 @@ export class AgentLoop {
       })
       this.emit('agent:done', { sessionId })
       return
+    }
+
+    // Model routing: for simple turns, try a cheaper/faster model first (failover chain still follows).
+    if (config.get('models.autoRoute')) {
+      const fast = parseProviderModel((config.get('models.routeFast') as string) || '')
+      if (fast && classifyComplexity(message) === 'simple') {
+        const hasKey = fast.provider === 'ollama' || !!(config.get(PROVIDER_KEY_PATH[fast.provider]) as string)
+        const already = usableChain.some(c => c.provider === fast.provider && c.model === fast.model)
+        if (hasKey && !already) usableChain.unshift(fast)
+      }
     }
 
     this.running.set(sessionId, true)
