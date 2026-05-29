@@ -851,6 +851,17 @@ export function Settings() {
                 </div>
               </Section>
 
+              <Section
+                title="Safety — Human in the Loop"
+                hint="When on, the agent pauses and asks you to approve destructive or outward actions (rm -rf, sudo, file deletes, sending email) before running them."
+              >
+                <Toggle
+                  checked={config.tools?.requireApproval !== false}
+                  onChange={v => set('tools.requireApproval', v)}
+                  label="Require my approval for risky actions (recommended)"
+                />
+              </Section>
+
               <Section title="Crypto / Web3" hint="Used by the Crypto pack — on-chain reads, contract verification, prices.">
                 <KeyInput label="Alchemy" hint="RPC provider · dashboard.alchemy.com" configKey="apiKeys.alchemy" value={config.apiKeys?.alchemy || ''} onSave={set} />
                 <KeyInput label="Etherscan" hint="Contract verification · etherscan.io/myapikey" configKey="apiKeys.etherscan" value={config.apiKeys?.etherscan || ''} onSave={set} />

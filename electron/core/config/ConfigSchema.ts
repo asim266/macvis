@@ -56,6 +56,9 @@ export const defaultConfig = {
     // Computer use (screenshot + mouse + keyboard). Enabled by default; the agent
     // still needs macOS Screen Recording + Accessibility permissions to act.
     computerUse: { enabled: true, useNative: false },
+    // Human-in-the-loop: pause for confirmation before destructive/outward actions
+    // (rm -rf, sudo, file deletes, sending mail, etc.).
+    requireApproval: true,
   },
   ui: { theme: 'system', fontSize: 'medium', sidebarOpen: true, accent: 'green' as 'green' | 'red' | 'blue' | 'white' },
   telegram: { enabled: false, runOnStartup: false },

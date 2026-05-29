@@ -6,6 +6,13 @@ contextBridge.exposeInMainWorld('macvis', {
       ipcRenderer.invoke('agent:run', { message, sessionId }),
     stop: (sessionId: string) =>
       ipcRenderer.invoke('agent:stop', { sessionId }),
+    approve: (id: string, ok: boolean) =>
+      ipcRenderer.invoke('agent:approve', { id, ok }),
+    onApproval: (cb: (data: any) => void) => {
+      const handler = (_: any, data: any) => cb(data)
+      ipcRenderer.on('agent:approval', handler)
+      return () => ipcRenderer.removeListener('agent:approval', handler)
+    },
     onStream: (cb: (data: any) => void) => {
       const handler = (_: any, data: any) => cb(data)
       ipcRenderer.on('agent:stream', handler)
@@ -71,6 +78,25 @@ contextBridge.exposeInMainWorld('macvis', {
     enable: (id: string) => ipcRenderer.invoke('skills:enable', { id }),
     disable: (id: string) => ipcRenderer.invoke('skills:disable', { id }),
     read: (id: string) => ipcRenderer.invoke('skills:read', { id }),
+  },
+
+  teams: {
+    roles: () => ipcRenderer.invoke('teams:roles'),
+    create: (goal: string, roles?: string[]) => ipcRenderer.invoke('teams:create', { goal, roles }),
+    list: () => ipcRenderer.invoke('teams:list'),
+    get: (id: string) => ipcRenderer.invoke('teams:get', { id }),
+    respond: (id: string, decision: any) => ipcRenderer.invoke('teams:respond', { id, decision }),
+    stop: (id: string) => ipcRenderer.invoke('teams:stop', { id }),
+    onUpdate: (cb: (data: any) => void) => {
+      const handler = (_: any, data: any) => cb(data)
+      ipcRenderer.on('team:update', handler)
+      return () => ipcRenderer.removeListener('team:update', handler)
+    },
+    onHitl: (cb: (data: any) => void) => {
+      const handler = (_: any, data: any) => cb(data)
+      ipcRenderer.on('team:hitl', handler)
+      return () => ipcRenderer.removeListener('team:hitl', handler)
+    },
   },
 
   packs: {

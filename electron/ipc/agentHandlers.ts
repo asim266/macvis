@@ -11,4 +11,9 @@ export function setupAgentHandlers() {
     agentLoop.stop(sessionId)
     return { ok: true }
   })
+
+  ipcMain.handle('agent:approve', async (_, { id, ok }) => {
+    agentLoop.approve(id, !!ok)
+    return { ok: true }
+  })
 }

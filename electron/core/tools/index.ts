@@ -16,6 +16,10 @@ import { ClipboardTool } from './ClipboardTool'
 import { NotifyTool } from './NotifyTool'
 import { OpenTool } from './OpenTool'
 import { ImageGenTool } from './ImageGenTool'
+import { MemoryTool } from './MemoryTool'
+import { SystemControlTool } from './SystemControlTool'
+import { SpotlightTool } from './SpotlightTool'
+import { MailTool, CalendarTool, RemindersTool, ContactsTool } from './MacAppsTools'
 import { SkillTool } from './SkillTool'
 import { ConfigStore } from '../config/ConfigStore'
 import { MCPManager } from '../mcp/MCPManager'
@@ -29,10 +33,12 @@ const TOOLS = [
   GlobTool, GrepTool,
   // Web
   WebSearchTool, WebFetchTool,
-  // Planning / skills
-  TodoTool, SkillTool,
+  // Planning / skills / memory
+  TodoTool, SkillTool, MemoryTool,
   // macOS automation & computer use
-  AppleScriptTool, ComputerTool, ClipboardTool, NotifyTool, OpenTool,
+  AppleScriptTool, ComputerTool, ClipboardTool, NotifyTool, OpenTool, SystemControlTool, SpotlightTool,
+  // macOS apps (real-life)
+  MailTool, CalendarTool, RemindersTool, ContactsTool,
   // Media
   ImageGenTool,
 ]
