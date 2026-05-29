@@ -3,7 +3,7 @@ import { MCPManager } from '../mcp/MCPManager'
 
 export class ToolBuilder {
   static async buildAll(_config: any): Promise<any[]> {
-    const native = getToolDefinitions()
+    const native = getToolDefinitions(_config)
     const mcpTools = MCPManager.getInstance().getAllTools()
     return [...native, ...mcpTools]
   }

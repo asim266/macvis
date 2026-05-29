@@ -345,6 +345,35 @@ function KeyInput({
   )
 }
 
+// ─── Per-tool enable/disable ─────────────────────────────────────────────────
+function ToolToggles({ disabled, onChange }: { disabled: string[]; onChange: (next: string[]) => void }) {
+  const [catalog, setCatalog] = useState<{ name: string; description: string }[]>([])
+  useEffect(() => { window.macvis.agent.toolCatalog?.().then((c: any) => setCatalog(c || [])) }, [])
+  const off = new Set(disabled)
+  const toggle = (name: string) => {
+    const next = new Set(off)
+    next.has(name) ? next.delete(name) : next.add(name)
+    onChange([...next])
+  }
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 6 }}>
+      {catalog.map(t => {
+        const enabled = !off.has(t.name)
+        return (
+          <button key={t.name} onClick={() => toggle(t.name)} title={t.description}
+            style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 9px', borderRadius: 7,
+              border: `1px solid ${enabled ? 'var(--accent-line)' : 'var(--line-1)'}`,
+              background: enabled ? 'var(--accent-soft)' : 'var(--surface-3)',
+              color: enabled ? 'var(--ink-1)' : 'var(--ink-4)', cursor: 'pointer', fontSize: 11.5, textAlign: 'left' }}>
+            <span style={{ width: 7, height: 7, borderRadius: 999, background: enabled ? 'var(--ok)' : 'var(--ink-4)', flexShrink: 0 }} />
+            <span style={{ fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 // ─── Section ──────────────────────────────────────────────────────────────────
 function Section({ title, children, hint }: { title: string; children: React.ReactNode; hint?: string }) {
   return (
@@ -871,6 +900,13 @@ export function Settings() {
                   checked={config.tools?.sandbox !== false}
                   onChange={v => set('tools.sandbox', v)}
                   label="Sandbox: block writes to keys & system paths (~/.ssh, Keychains, /etc)"
+                />
+              </Section>
+
+              <Section title="Tools" hint="Turn individual tools on or off. Disabled tools are hidden from the agent.">
+                <ToolToggles
+                  disabled={(config.tools?.disabled as string[]) || []}
+                  onChange={next => set('tools.disabled', next)}
                 />
               </Section>
 

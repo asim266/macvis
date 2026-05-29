@@ -26,6 +26,7 @@ import { RagTool } from './RagTool'
 import { SkillTool } from './SkillTool'
 import { ConfigStore } from '../config/ConfigStore'
 import { MCPManager } from '../mcp/MCPManager'
+import { SubagentTool } from './SubagentTool'
 import { checkProtectedPath, FILE_MUTATING_TOOLS, pathFromToolInput } from '../security/sandbox'
 
 const TOOLS = [
@@ -45,12 +46,21 @@ const TOOLS = [
   MailTool, CalendarTool, RemindersTool, ContactsTool,
   // Documents & knowledge
   DocumentTool, CreateDocumentTool, RagTool,
+  // Orchestration
+  SubagentTool,
   // Media
   ImageGenTool,
 ]
 
-export function getToolDefinitions() {
-  return TOOLS.map(t => t.definition)
+/** Tool definitions the model can see, excluding any the user disabled in Settings. */
+export function getToolDefinitions(config?: ConfigStore) {
+  const disabled = new Set((config?.get('tools.disabled') as string[]) || [])
+  return TOOLS.filter(t => !disabled.has(t.definition.name)).map(t => t.definition)
+}
+
+/** All native tool names + descriptions (for the Settings enable/disable UI). */
+export function getToolCatalog(): { name: string; description: string }[] {
+  return TOOLS.map(t => ({ name: t.definition.name, description: (t.definition.description || '').slice(0, 120) }))
 }
 
 /** Look up a registered native tool by name (for preview/dry-run, etc.). */
@@ -65,6 +75,11 @@ export async function executeTool(name: string, input: any, config: ConfigStore)
   }
   const tool = TOOLS.find(t => t.definition.name === name)
   if (!tool) return `Unknown tool: ${name}`
+
+  // Respect per-tool disable from Settings.
+  if (((config.get('tools.disabled') as string[]) || []).includes(name)) {
+    return `The "${name}" tool is disabled in Settings. Ask the user to re-enable it, or use a different approach.`
+  }
 
   // Filesystem sandbox: block writes/deletes to protected paths (keys, system dirs).
   if (config.get('tools.sandbox') !== false && FILE_MUTATING_TOOLS.has(name)) {

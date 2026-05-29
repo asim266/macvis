@@ -43,6 +43,7 @@ contextBridge.exposeInMainWorld('macvis', {
       ipcRenderer.on('agent:usage', handler)
       return () => ipcRenderer.removeListener('agent:usage', handler)
     },
+    toolCatalog: () => ipcRenderer.invoke('tools:catalog'),
     onStatus: (cb: (data: any) => void) => {
       const handler = (_: any, data: any) => cb(data)
       ipcRenderer.on('agent:status', handler)

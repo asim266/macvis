@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { unifiedDiff, newFileDiff } from '../electron/core/tools/diff'
 import { parseSkill } from '../electron/core/skills/SkillParser'
 import { checkProtectedPath, pathFromToolInput } from '../electron/core/security/sandbox'
+import { redactSecrets } from '../electron/core/security/redact'
 
 describe('unifiedDiff', () => {
   it('reports no changes for identical text', () => {
@@ -49,5 +50,20 @@ describe('sandbox', () => {
   it('only guards destructive filesystem operations', () => {
     expect(pathFromToolInput('filesystem', { operation: 'read', path: '/x' })).toBeUndefined()
     expect(pathFromToolInput('filesystem', { operation: 'delete', path: '/x' })).toBe('/x')
+  })
+})
+
+describe('redactSecrets', () => {
+  it('masks an OpenAI-style key', () => {
+    const out = redactSecrets('key is sk-abcdef012345678901234567890 ok')
+    expect(out).not.toContain('sk-abcdef012345678901234567890')
+    expect(out).toContain('«redacted»')
+  })
+  it('masks GitHub tokens and Bearer headers', () => {
+    expect(redactSecrets('ghp_abcdefghijklmnopqrstuvwxyz012345')).toContain('«redacted»')
+    expect(redactSecrets('Authorization: Bearer abcdef12345678901234')).toContain('«redacted»')
+  })
+  it('leaves ordinary text untouched', () => {
+    expect(redactSecrets('hello world, no secrets here')).toBe('hello world, no secrets here')
   })
 })

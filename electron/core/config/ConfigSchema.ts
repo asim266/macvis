@@ -18,6 +18,7 @@ export const defaultConfig = {
     alchemy: '',
     etherscan: '',
     coingecko: '',
+    googleMaps: '',
     // Lead generation
     hunter: '',
     apollo: '',
@@ -65,6 +66,8 @@ export const defaultConfig = {
     // Filesystem sandbox: block writes/deletes to protected paths (keys, system dirs).
     sandbox: true,
     protectedPaths: [] as string[],
+    // Native tools the user has turned off (by tool name).
+    disabled: [] as string[],
   },
   ui: { theme: 'system', fontSize: 'medium', sidebarOpen: true, accent: 'green' as 'green' | 'red' | 'blue' | 'white', speakResponses: false },
   telegram: { enabled: false, runOnStartup: false },

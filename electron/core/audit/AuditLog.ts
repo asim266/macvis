@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
+import { redactSecrets } from '../security/redact'
 
 const LOG_DIR = path.join(os.homedir(), '.macvis', 'logs')
 const LOG_FILE = path.join(LOG_DIR, 'audit.log')
@@ -8,7 +9,8 @@ const LOG_FILE = path.join(LOG_DIR, 'audit.log')
 function summarize(input: any): string {
   try {
     const s = typeof input === 'string' ? input : JSON.stringify(input)
-    return s.length > 300 ? s.slice(0, 300) + '…' : s
+    const clipped = s.length > 300 ? s.slice(0, 300) + '…' : s
+    return redactSecrets(clipped)
   } catch { return '' }
 }
 
