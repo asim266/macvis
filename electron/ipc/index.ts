@@ -6,6 +6,7 @@ import { setupPacksHandlers } from './packsHandlers'
 import { setupTeamsHandlers } from './teamsHandlers'
 import { setupSchedulerHandlers } from './schedulerHandlers'
 import { setupVoiceHandlers } from './voiceHandlers'
+import { setupTerminalHandlers } from './terminalHandlers'
 import { setupTelegramHandlers } from './telegramHandlers'
 import { setupProviderHandlers } from './providerHandlers'
 import { setupSessionHandlers } from './sessionHandlers'
@@ -20,6 +21,7 @@ export function setupIPCHandlers() {
   setupTeamsHandlers()
   setupSchedulerHandlers()
   setupVoiceHandlers()
+  setupTerminalHandlers()
   setupTelegramHandlers()
   setupProviderHandlers()
   setupSessionHandlers()

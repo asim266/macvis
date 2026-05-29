@@ -118,6 +118,17 @@ contextBridge.exposeInMainWorld('macvis', {
     transcribe: (audio: string, mimeType: string) => ipcRenderer.invoke('voice:transcribe', { audio, mimeType }),
   },
 
+  terminal: {
+    create: (cwd?: string) => ipcRenderer.invoke('terminal:create', { cwd }),
+    input: (id: string, data: string) => ipcRenderer.invoke('terminal:input', { id, data }),
+    kill: (id: string) => ipcRenderer.invoke('terminal:kill', { id }),
+    onData: (cb: (data: any) => void) => {
+      const handler = (_: any, data: any) => cb(data)
+      ipcRenderer.on('terminal:data', handler)
+      return () => ipcRenderer.removeListener('terminal:data', handler)
+    },
+  },
+
   packs: {
     registry: () => ipcRenderer.invoke('packs:registry'),
     list: () => ipcRenderer.invoke('packs:list'),
