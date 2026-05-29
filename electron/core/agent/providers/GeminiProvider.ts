@@ -119,9 +119,21 @@ function toGeminiContents(messages: CommonMessage[]): any[] {
         parts.push({ functionCall: { name: safeName, args: b.input || {} } })
       } else if (b.type === 'tool_result') {
         const name = idToName.get(b.tool_use_id) || b.tool_use_id
-        let parsed: any
-        try { parsed = JSON.parse(b.content) } catch { parsed = { result: b.content } }
-        parts.push({ functionResponse: { name, response: parsed } })
+        if (typeof b.content === 'string') {
+          let parsed: any
+          try { parsed = JSON.parse(b.content) } catch { parsed = { result: b.content } }
+          parts.push({ functionResponse: { name, response: parsed } })
+        } else {
+          // Rich tool result (text + images). Gemini takes the functionResponse as
+          // JSON, then the image bytes as separate inlineData parts in the same turn.
+          const textParts = b.content.filter(c => c.type === 'text').map((c: any) => c.text)
+          parts.push({ functionResponse: { name, response: { result: textParts.join('\n') || 'image returned' } } })
+          for (const c of b.content) {
+            if (c.type === 'image') {
+              parts.push({ inlineData: { mimeType: c.mimeType, data: c.data } })
+            }
+          }
+        }
       }
     }
     if (parts.length) out.push({ role, parts })

@@ -27,6 +27,13 @@ export function Chat() {
   const sessionsLoaded = useChatStore(s => s.sessionsLoaded)
   const bottomRef = useRef<HTMLDivElement>(null)
   const [noApiKey, setNoApiKey] = useState(false)
+  const [todos, setTodos] = useState<{ content: string; status: string; activeForm?: string }[]>([])
+
+  // Live task list emitted by the todo_write tool
+  useEffect(() => {
+    const unsub = window.macvis?.agent?.onTodos?.((data: any) => setTodos(data.todos || []))
+    return () => { unsub?.() }
+  }, [])
 
   const activeSession = sessions.find(s => s.id === activeSessionId)
 
@@ -59,6 +66,7 @@ export function Chat() {
       return
     }
     setNoApiKey(false)
+    setTodos([])
 
     addMessage(activeSessionId, { role: 'user', content: text })
     const assistantId = addMessage(activeSessionId, { role: 'assistant', content: '' })
@@ -81,7 +89,7 @@ export function Chat() {
       if (data.sessionId === activeSessionId) {
         addOrUpdateToolCall(activeSessionId, assistantId, {
           id: data.id,
-          name: data.name, input: data.input, result: data.result, status: data.status,
+          name: data.name, input: data.input, result: data.result, image: data.image, status: data.status,
         })
       }
     }))
@@ -277,6 +285,40 @@ export function Chat() {
           )}
         </div>
       </div>
+
+      {todos.length > 0 && (
+        <div style={{
+          maxWidth: 760, margin: '0 auto', width: '100%', padding: '0 32px 8px',
+        }}>
+          <div style={{
+            background: 'var(--surface-1)', border: '1px solid var(--line-1)', borderRadius: 10,
+            padding: '10px 14px',
+          }}>
+            <div style={{
+              fontSize: 9.5, fontWeight: 700, color: 'var(--ink-4)', textTransform: 'uppercase',
+              letterSpacing: '0.12em', fontFamily: 'var(--font-mono)', marginBottom: 6,
+              display: 'flex', justifyContent: 'space-between',
+            }}>
+              <span>Tasks</span>
+              <span>{todos.filter(t => t.status === 'completed').length}/{todos.length}</span>
+            </div>
+            {todos.map((t, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: 8, fontSize: 12,
+                padding: '2px 0',
+                color: t.status === 'completed' ? 'var(--ink-4)' : t.status === 'in_progress' ? 'var(--accent-bright)' : 'var(--ink-2)',
+              }}>
+                <span style={{ width: 14, flexShrink: 0, textAlign: 'center' }}>
+                  {t.status === 'completed' ? '✓' : t.status === 'in_progress' ? '◐' : '○'}
+                </span>
+                <span style={{ textDecoration: t.status === 'completed' ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {t.status === 'in_progress' && t.activeForm ? t.activeForm : t.content}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <ChatInput onSend={handleSend} onStop={handleStop} isStreaming={isStreaming} />
     </div>

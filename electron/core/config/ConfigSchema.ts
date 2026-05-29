@@ -14,6 +14,13 @@ export const defaultConfig = {
     brave: '',
     firecrawl: '',
     nanobrowser: '',
+    // Crypto / Web3
+    alchemy: '',
+    etherscan: '',
+    coingecko: '',
+    // Lead generation
+    hunter: '',
+    apollo: '',
     telegram: { botToken: '', allowedUserId: '' },
   },
   // Cached provider validation status + available models
@@ -44,6 +51,12 @@ export const defaultConfig = {
     custom: [] as any[],
   },
   skills: { installed: [] as string[], enabled: [] as string[] },
+  packs: { installed: [] as string[] },
+  tools: {
+    // Computer use (screenshot + mouse + keyboard). Enabled by default; the agent
+    // still needs macOS Screen Recording + Accessibility permissions to act.
+    computerUse: { enabled: true, useNative: false },
+  },
   ui: { theme: 'system', fontSize: 'medium', sidebarOpen: true, accent: 'green' as 'green' | 'red' | 'blue' | 'white' },
   telegram: { enabled: false, runOnStartup: false },
 }

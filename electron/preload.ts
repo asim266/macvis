@@ -36,6 +36,11 @@ contextBridge.exposeInMainWorld('macvis', {
       ipcRenderer.on('agent:status', handler)
       return () => ipcRenderer.removeListener('agent:status', handler)
     },
+    onTodos: (cb: (data: any) => void) => {
+      const handler = (_: any, data: any) => cb(data)
+      ipcRenderer.on('agent:todos', handler)
+      return () => ipcRenderer.removeListener('agent:todos', handler)
+    },
   },
 
   config: {
@@ -61,8 +66,23 @@ contextBridge.exposeInMainWorld('macvis', {
 
   skills: {
     list: () => ipcRenderer.invoke('skills:list'),
-    install: (url: string) => ipcRenderer.invoke('skills:install', { url }),
-    uninstall: (name: string) => ipcRenderer.invoke('skills:uninstall', { name }),
+    install: (source: string) => ipcRenderer.invoke('skills:install', { source }),
+    uninstall: (id: string) => ipcRenderer.invoke('skills:uninstall', { id }),
+    enable: (id: string) => ipcRenderer.invoke('skills:enable', { id }),
+    disable: (id: string) => ipcRenderer.invoke('skills:disable', { id }),
+    read: (id: string) => ipcRenderer.invoke('skills:read', { id }),
+  },
+
+  packs: {
+    registry: () => ipcRenderer.invoke('packs:registry'),
+    list: () => ipcRenderer.invoke('packs:list'),
+    install: (packId: string) => ipcRenderer.invoke('packs:install', { packId }),
+    uninstall: (packId: string) => ipcRenderer.invoke('packs:uninstall', { packId }),
+    onStatus: (cb: (data: any) => void) => {
+      const handler = (_: any, data: any) => cb(data)
+      ipcRenderer.on('pack:status', handler)
+      return () => ipcRenderer.removeListener('pack:status', handler)
+    },
   },
 
   telegram: {

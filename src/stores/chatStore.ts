@@ -5,6 +5,8 @@ export interface ToolCall {
   name: string
   input?: any
   result?: string
+  /** Live image (base64) for inline rendering; not persisted to disk. */
+  image?: { data: string; mimeType: string }
   status: 'running' | 'done' | 'error'
 }
 

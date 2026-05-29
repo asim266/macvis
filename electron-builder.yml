@@ -52,6 +52,14 @@ files:
   - package.json
   - "!node_modules/**/*"
 
+# Bundle the built-in skill playbooks so the catalog works in the packaged app.
+# SkillManager reads them from process.resourcesPath/skills.
+extraResources:
+  - from: skills
+    to: skills
+    filter:
+      - "**/SKILL.md"
+
 asar: true
 
 # Publish channel for electron-updater. We don't auto-publish from `pnpm build`

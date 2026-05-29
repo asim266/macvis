@@ -52,12 +52,31 @@ function toOpenAIMessages(system: string, messages: CommonMessage[]) {
       // user message — may be text or tool_results (one per tool_result block becomes a `tool` message)
       const toolResults = m.content.filter(b => b.type === 'tool_result') as any[]
       if (toolResults.length) {
+        // OpenAI `tool` messages only accept string content. Images returned by a
+        // tool (e.g. screenshots) are sent as a follow-up user message with an
+        // image_url part — the documented workaround for vision after tool use.
+        const trailingImages: any[] = []
         for (const tr of toolResults) {
+          if (typeof tr.content === 'string') {
+            out.push({ role: 'tool', tool_call_id: tr.tool_use_id, content: tr.content })
+            continue
+          }
+          const textParts = tr.content.filter((c: any) => c.type === 'text').map((c: any) => c.text)
+          const imageParts = tr.content.filter((c: any) => c.type === 'image')
           out.push({
             role: 'tool',
             tool_call_id: tr.tool_use_id,
-            content: tr.content,
+            content: textParts.join('\n') || (imageParts.length ? '[image returned — see below]' : ''),
           })
+          for (const img of imageParts) {
+            trailingImages.push({
+              type: 'image_url',
+              image_url: { url: `data:${img.mimeType};base64,${img.data}` },
+            })
+          }
+        }
+        if (trailingImages.length) {
+          out.push({ role: 'user', content: trailingImages })
         }
       } else {
         const text = m.content

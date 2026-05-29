@@ -4,6 +4,7 @@ import { Chat } from './pages/Chat'
 import { Settings } from './pages/Settings'
 import { MCPs } from './pages/MCPs'
 import { Projects } from './pages/Projects'
+import { Skills } from './pages/Skills'
 import { useChatStore } from './stores/chatStore'
 import { useConfigStore } from './stores/configStore'
 
@@ -41,15 +42,7 @@ export default function App() {
         {page === 'settings' && <Settings />}
         {page === 'mcps' && <MCPs />}
         {page === 'projects' && <Projects />}
-        {page === 'skills' && (
-          <div style={{
-            flex: 1,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'var(--ink-3)', fontSize: 14, letterSpacing: '-0.01em',
-          }}>
-            Coming soon
-          </div>
-        )}
+        {page === 'skills' && <Skills />}
       </main>
     </div>
   )

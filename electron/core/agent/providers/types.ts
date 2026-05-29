@@ -12,6 +12,14 @@ export interface ContentBlockText {
   text: string
 }
 
+export interface ContentBlockImage {
+  type: 'image'
+  /** base64-encoded image data (no data: URI prefix) */
+  data: string
+  /** e.g. 'image/png', 'image/jpeg' */
+  mimeType: string
+}
+
 export interface ContentBlockToolUse {
   type: 'tool_use'
   id: string
@@ -19,13 +27,16 @@ export interface ContentBlockToolUse {
   input: any
 }
 
+/** Rich tool-result content — a string, or a mix of text + image blocks (for vision/computer-use). */
+export type ToolResultContent = string | Array<ContentBlockText | ContentBlockImage>
+
 export interface ContentBlockToolResult {
   type: 'tool_result'
   tool_use_id: string
-  content: string
+  content: ToolResultContent
 }
 
-export type ContentBlock = ContentBlockText | ContentBlockToolUse | ContentBlockToolResult
+export type ContentBlock = ContentBlockText | ContentBlockImage | ContentBlockToolUse | ContentBlockToolResult
 
 export interface CommonMessage {
   role: 'user' | 'assistant'

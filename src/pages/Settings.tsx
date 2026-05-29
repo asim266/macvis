@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useConfigStore } from '../stores/configStore'
 import { Eye, EyeOff, Check, X, Loader, AlertCircle, Play, Square } from 'lucide-react'
 
-type Tab = 'chat' | 'other' | 'telegram' | 'appearance'
+type Tab = 'chat' | 'other' | 'system' | 'telegram' | 'appearance'
 type ValidationState = 'idle' | 'validating' | 'valid' | 'invalid'
 
 interface ProviderInfo {
@@ -675,6 +675,7 @@ export function Settings() {
   const tabs: { id: Tab; label: string }[] = [
     { id: 'chat', label: 'Chat API Keys' },
     { id: 'other', label: 'Other Keys' },
+    { id: 'system', label: 'System & Tools' },
     { id: 'telegram', label: 'Telegram' },
     { id: 'appearance', label: 'Appearance' },
   ]
@@ -819,6 +820,46 @@ export function Settings() {
                 <p style={{ fontSize: 12, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', lineHeight: 1.6 }}>
                   ~/Library/Application Support/macvis/config.json
                 </p>
+              </Section>
+            </>
+          )}
+
+          {tab === 'system' && (
+            <>
+              <Section
+                title="Computer Use"
+                hint="Lets the agent take screenshots and control the mouse & keyboard. Grant MacVis Screen Recording and Accessibility in System Settings → Privacy & Security for it to work."
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 8 }}>
+                  <Toggle
+                    checked={config.tools?.computerUse?.enabled !== false}
+                    onChange={v => set('tools.computerUse.enabled', v)}
+                    label="Enable computer use (screenshot, click, type, scroll)"
+                  />
+                  <Toggle
+                    checked={!!config.tools?.computerUse?.useNative}
+                    onChange={v => set('tools.computerUse.useNative', v)}
+                    label="Use native backend (nut-js) for precise mouse/keyboard — requires installing @nut-tree-fork/nut-js"
+                  />
+                </div>
+                <div style={{
+                  padding: '10px 12px', background: 'var(--surface-3)', border: '1px solid var(--line-1)',
+                  borderRadius: 8, fontSize: 11.5, color: 'var(--ink-3)', lineHeight: 1.6,
+                }}>
+                  💡 Mouse control via the shell backend needs <code style={{ color: 'var(--accent-bright)' }}>brew install cliclick</code>.
+                  Screenshots and keyboard/typing work without it.
+                </div>
+              </Section>
+
+              <Section title="Crypto / Web3" hint="Used by the Crypto pack — on-chain reads, contract verification, prices.">
+                <KeyInput label="Alchemy" hint="RPC provider · dashboard.alchemy.com" configKey="apiKeys.alchemy" value={config.apiKeys?.alchemy || ''} onSave={set} />
+                <KeyInput label="Etherscan" hint="Contract verification · etherscan.io/myapikey" configKey="apiKeys.etherscan" value={config.apiKeys?.etherscan || ''} onSave={set} />
+                <KeyInput label="CoinGecko" hint="Prices (optional) · coingecko.com/en/api" configKey="apiKeys.coingecko" value={config.apiKeys?.coingecko || ''} onSave={set} />
+              </Section>
+
+              <Section title="Lead Generation" hint="Used by the Lead Gen pack — discovery and enrichment.">
+                <KeyInput label="Hunter" hint="Email finder · hunter.io" configKey="apiKeys.hunter" value={config.apiKeys?.hunter || ''} onSave={set} />
+                <KeyInput label="Apollo" hint="Contact enrichment · apollo.io" configKey="apiKeys.apollo" value={config.apiKeys?.apollo || ''} onSave={set} />
               </Section>
             </>
           )}

@@ -2,6 +2,7 @@ import { setupAgentHandlers } from './agentHandlers'
 import { setupConfigHandlers } from './configHandlers'
 import { setupMCPHandlers } from './mcpHandlers'
 import { setupSkillsHandlers } from './skillsHandlers'
+import { setupPacksHandlers } from './packsHandlers'
 import { setupTelegramHandlers } from './telegramHandlers'
 import { setupProviderHandlers } from './providerHandlers'
 import { setupSessionHandlers } from './sessionHandlers'
@@ -12,6 +13,7 @@ export function setupIPCHandlers() {
   setupConfigHandlers()
   setupMCPHandlers()
   setupSkillsHandlers()
+  setupPacksHandlers()
   setupTelegramHandlers()
   setupProviderHandlers()
   setupSessionHandlers()
