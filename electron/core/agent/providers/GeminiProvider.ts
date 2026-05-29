@@ -228,12 +228,14 @@ export class GeminiProvider implements ChatProvider {
       content.push({ type: 'text', text: note })
     }
 
+    const um = (response as any).usageMetadata
     return {
       content,
       toolUses,
       text,
       stopReason: toolUses.length > 0 ? 'tool_use' :
                   finishReason === 'MAX_TOKENS' ? 'max_tokens' : 'end_turn',
+      usage: um ? { inputTokens: um.promptTokenCount || 0, outputTokens: um.candidatesTokenCount || 0 } : undefined,
       raw: { finishReason, blockReason: response.promptFeedback?.blockReason },
     }
   }

@@ -26,6 +26,7 @@ import { RagTool } from './RagTool'
 import { SkillTool } from './SkillTool'
 import { ConfigStore } from '../config/ConfigStore'
 import { MCPManager } from '../mcp/MCPManager'
+import { checkProtectedPath, FILE_MUTATING_TOOLS, pathFromToolInput } from '../security/sandbox'
 
 const TOOLS = [
   // Execution
@@ -64,5 +65,16 @@ export async function executeTool(name: string, input: any, config: ConfigStore)
   }
   const tool = TOOLS.find(t => t.definition.name === name)
   if (!tool) return `Unknown tool: ${name}`
+
+  // Filesystem sandbox: block writes/deletes to protected paths (keys, system dirs).
+  if (config.get('tools.sandbox') !== false && FILE_MUTATING_TOOLS.has(name)) {
+    const p = pathFromToolInput(name, input)
+    if (p) {
+      const extra = (config.get('tools.protectedPaths') as string[]) || []
+      const reason = checkProtectedPath(p, extra)
+      if (reason) return `Blocked by sandbox: ${reason}`
+    }
+  }
+
   return await (tool.execute as any)(input, config)
 }

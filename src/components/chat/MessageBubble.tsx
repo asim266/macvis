@@ -1,5 +1,9 @@
+import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/github-dark.css'
+import { Copy, Check } from 'lucide-react'
 import { ToolCallCard } from './ToolCallCard'
 import type { Message } from '../../stores/chatStore'
 
@@ -7,6 +11,32 @@ interface Props {
   message: Message
   isStreaming?: boolean
 }
+
+function CodeBlock({ className, children }: any) {
+  const [copied, setCopied] = useState(false)
+  const text = String(children ?? '').replace(/\n$/, '')
+  const lang = /language-(\w+)/.exec(className || '')?.[1]
+  const isBlock = !!lang || text.includes('\n')
+  if (!isBlock) {
+    return <code style={{ background: 'var(--surface-3)', padding: '1px 5px', borderRadius: 4, fontFamily: 'var(--font-mono)', fontSize: '0.92em' }}>{children}</code>
+  }
+  let html = ''
+  try { html = lang && hljs.getLanguage(lang) ? hljs.highlight(text, { language: lang }).value : hljs.highlightAuto(text).value }
+  catch { html = text.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string)) }
+  const copy = () => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500) }
+  return (
+    <div style={{ position: 'relative', margin: '10px 0', border: '1px solid var(--line-1)', borderRadius: 8, overflow: 'hidden', background: '#0d1117' }}>
+      <button onClick={copy} title="Copy" style={{ position: 'absolute', top: 6, right: 6, zIndex: 1, display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 6, border: '1px solid var(--line-2)', background: 'var(--surface-3)', color: copied ? 'var(--ok)' : 'var(--ink-3)', fontSize: 10.5, cursor: 'pointer', fontFamily: 'var(--font-mono)' }}>
+        {copied ? <Check size={11} /> : <Copy size={11} />}{lang || 'code'}
+      </button>
+      <pre style={{ margin: 0, padding: '12px 14px', overflow: 'auto', fontSize: 12, lineHeight: 1.55, fontFamily: 'var(--font-mono)' }}>
+        <code className={`hljs ${className || ''}`} dangerouslySetInnerHTML={{ __html: html }} />
+      </pre>
+    </div>
+  )
+}
+
+const MD_COMPONENTS = { code: CodeBlock }
 
 export function MessageBubble({ message, isStreaming }: Props) {
   if (message.role === 'user') {
@@ -98,7 +128,7 @@ export function MessageBubble({ message, isStreaming }: Props) {
           }}
           className="selectable prose"
         >
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS}>{message.content}</ReactMarkdown>
         </div>
       )}
 

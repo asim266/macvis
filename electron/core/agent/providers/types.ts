@@ -60,6 +60,13 @@ export interface ToolUseResult {
   input: any
 }
 
+export interface TokenUsage {
+  inputTokens: number
+  outputTokens: number
+  cacheReadTokens?: number
+  cacheWriteTokens?: number
+}
+
 export interface FinalMessage {
   /** All assistant content blocks (text, tool_use) in order */
   content: ContentBlock[]
@@ -69,6 +76,8 @@ export interface FinalMessage {
   text: string
   /** Why the model stopped */
   stopReason: 'end_turn' | 'tool_use' | 'max_tokens' | 'error'
+  /** Token usage for this turn, if the provider reports it */
+  usage?: TokenUsage
   /** Provider-native raw response (for debugging) */
   raw?: any
 }

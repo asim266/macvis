@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { Sidebar } from './components/layout/Sidebar'
 import { Chat } from './pages/Chat'
 import { Settings } from './pages/Settings'
 import { MCPs } from './pages/MCPs'
 import { Projects } from './pages/Projects'
 import { Skills } from './pages/Skills'
-import { Agents } from './pages/Agents'
+// Agents pulls in three.js (~2MB) — lazy-load so the app starts fast.
+const Agents = lazy(() => import('./pages/Agents').then(m => ({ default: m.Agents })))
 import { Schedules } from './pages/Schedules'
 import { Terminal } from './pages/Terminal'
 import { useChatStore } from './stores/chatStore'
@@ -46,7 +47,11 @@ export default function App() {
         {page === 'mcps' && <MCPs />}
         {page === 'projects' && <Projects />}
         {page === 'skills' && <Skills />}
-        {page === 'agents' && <Agents />}
+        {page === 'agents' && (
+          <Suspense fallback={<div style={{ flex: 1, display: 'grid', placeItems: 'center', color: 'var(--ink-4)', fontSize: 13 }}>Loading 3D scene…</div>}>
+            <Agents />
+          </Suspense>
+        )}
         {page === 'schedules' && <Schedules />}
         {page === 'terminal' && <Terminal />}
       </main>

@@ -866,6 +866,12 @@ export function Settings() {
                   onChange={v => set('tools.approveEdits', v)}
                   label="Also review a diff before every file edit"
                 />
+                <div style={{ height: 10 }} />
+                <Toggle
+                  checked={config.tools?.sandbox !== false}
+                  onChange={v => set('tools.sandbox', v)}
+                  label="Sandbox: block writes to keys & system paths (~/.ssh, Keychains, /etc)"
+                />
               </Section>
 
               <Section title="Crypto / Web3" hint="Used by the Crypto pack — on-chain reads, contract verification, prices.">

@@ -3,6 +3,56 @@ import { ConfigStore } from '../config/ConfigStore'
 import { ToolBuilder } from './ToolBuilder'
 import { executeTool } from '../tools'
 import { isImageToolResult } from '../tools/types'
+import { AuditLog } from '../audit/AuditLog'
+
+const HISTORY_CHAR_BUDGET = 140_000   // ~ keep well under context limits
+const KEEP_RECENT_MESSAGES = 12
+
+function messageChars(m: CommonMessage): number {
+  if (typeof m.content === 'string') return m.content.length
+  let n = 0
+  for (const b of m.content) {
+    if (b.type === 'text') n += b.text.length
+    else if (b.type === 'tool_result') n += typeof b.content === 'string' ? b.content.length : 2000
+    else if (b.type === 'tool_use') n += JSON.stringify(b.input || {}).length
+    else n += 1500 // image block
+  }
+  return n
+}
+
+function textOf(m: CommonMessage): string {
+  if (typeof m.content === 'string') return m.content
+  return m.content.map(b =>
+    b.type === 'text' ? b.text :
+    b.type === 'tool_use' ? `[tool ${b.name}]` :
+    b.type === 'tool_result' ? `[result]` : ''
+  ).join(' ')
+}
+
+/** Collapse old turns into a digest when history is too large. */
+function compactHistory(messages: CommonMessage[]): { kept: CommonMessage[]; digest: string } {
+  const total = messages.reduce((s, m) => s + messageChars(m), 0)
+  if (total <= HISTORY_CHAR_BUDGET || messages.length <= KEEP_RECENT_MESSAGES) {
+    return { kept: messages, digest: '' }
+  }
+  // Find a cut point: keep the last KEEP_RECENT_MESSAGES, but advance to the next
+  // plain user message so we never strand a tool_result from its tool_use.
+  let cut = Math.max(0, messages.length - KEEP_RECENT_MESSAGES)
+  while (cut < messages.length) {
+    const m = messages[cut]
+    const isToolResult = typeof m.content !== 'string' && (m.content as ContentBlock[]).some(b => b.type === 'tool_result')
+    if (m.role === 'user' && !isToolResult) break
+    cut++
+  }
+  if (cut >= messages.length) return { kept: messages, digest: '' }
+  const dropped = messages.slice(0, cut)
+  const kept = messages.slice(cut)
+  const digest = dropped
+    .map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${textOf(m).replace(/\s+/g, ' ').slice(0, 400)}`)
+    .join('\n')
+    .slice(0, 6000)
+  return { kept, digest }
+}
 import { SessionStore, type PersistedMessage } from '../sessions/SessionStore'
 import { ProjectManager } from '../projects/ProjectManager'
 import { getProvider, parseProviderModel, type ProviderName } from './providers'
@@ -320,8 +370,20 @@ export class AgentLoop {
     const { MemoryStore } = await import('../memory/MemoryStore')
     const memorySummary = MemoryStore.summary()
 
-    const systemPrompt = buildSystemPrompt(connectedMCPs, enabledSkills, memorySummary)
+    let systemPrompt = buildSystemPrompt(connectedMCPs, enabledSkills, memorySummary)
 
+    // Context compaction: if the replayed history is very large, collapse the
+    // oldest turns into a text digest appended to the system prompt, keeping only
+    // a recent window in the message array. Prevents context-window overflow on
+    // long sessions (history is replayed in full every run otherwise).
+    const compacted = compactHistory(apiMessages)
+    if (compacted.digest) {
+      apiMessages.length = 0
+      apiMessages.push(...compacted.kept)
+      systemPrompt += `\n\n# Earlier conversation (compacted summary)\n${compacted.digest}`
+    }
+
+    let totalUsage = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 }
     let assistantMsg: PersistedMessage | null = null
 
     try {
@@ -404,6 +466,15 @@ export class AgentLoop {
         // Emit which provider/model actually answered (for status bar)
         this.emit('agent:provider', { sessionId, provider: usedProvider, model: usedModel })
 
+        // Accumulate + emit token usage for the cost meter
+        if (finalMsg.usage) {
+          totalUsage.inputTokens += finalMsg.usage.inputTokens || 0
+          totalUsage.outputTokens += finalMsg.usage.outputTokens || 0
+          totalUsage.cacheReadTokens += finalMsg.usage.cacheReadTokens || 0
+          totalUsage.cacheWriteTokens += finalMsg.usage.cacheWriteTokens || 0
+          this.emit('agent:usage', { sessionId, provider: usedProvider, model: usedModel, ...totalUsage })
+        }
+
         // Push to API messages array for next iteration
         apiMessages.push({ role: 'assistant', content: finalMsg.content })
 
@@ -466,13 +537,17 @@ export class AgentLoop {
               this.emit('agent:tool', { id: toolUse.id, name: toolUse.name, input: toolUse.input, result, status: 'error', sessionId })
               toolResults.push({ type: 'tool_result', tool_use_id: toolUse.id, content: result })
               apiResultBlocks.push({ type: 'tool_result', tool_use_id: toolUse.id, content: result })
+              AuditLog.record({ sessionId, tool: toolUse.name, input: toolUse.input, ok: false, denied: true })
               continue
             }
           }
+          const _t0 = Date.now()
           try {
             result = await executeTool(toolUse.name, toolUse.input, config)
+            AuditLog.record({ sessionId, tool: toolUse.name, input: toolUse.input, ok: true, ms: Date.now() - _t0 })
           } catch (err: any) {
             result = `Error: ${err.message || String(err)}`
+            AuditLog.record({ sessionId, tool: toolUse.name, input: toolUse.input, ok: false, ms: Date.now() - _t0 })
           }
 
           // Normalize: image-bearing result vs plain string.
