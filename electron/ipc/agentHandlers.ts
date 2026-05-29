@@ -1,7 +1,10 @@
 import { ipcMain } from 'electron'
 import { agentLoop } from '../core/agent/AgentLoop'
+import { getToolCatalog } from '../core/tools'
 
 export function setupAgentHandlers() {
+  ipcMain.handle('tools:catalog', async () => getToolCatalog())
+
   ipcMain.handle('agent:run', async (_, { message, sessionId, attachments }) => {
     agentLoop.run(message, sessionId, attachments)
     return { ok: true }
