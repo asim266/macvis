@@ -2,6 +2,7 @@ import { getMainWindow } from '../../main'
 import { ConfigStore } from '../config/ConfigStore'
 import { ToolBuilder } from './ToolBuilder'
 import { executeTool } from '../tools'
+import { isImageToolResult } from '../tools/types'
 import { SessionStore, type PersistedMessage } from '../sessions/SessionStore'
 import { ProjectManager } from '../projects/ProjectManager'
 import { getProvider, parseProviderModel, type ProviderName } from './providers'
@@ -19,7 +20,52 @@ const PROVIDER_KEY_PATH: Record<ProviderName, string> = {
   ollama: 'apiKeys.ollama',
 }
 
-function buildSystemPrompt(connectedMCPs: string[] = []): string {
+const TOOLS_SECTION = `# Tools — your native capabilities
+
+You have a full coding-agent toolset. Pick the most specific tool:
+
+**Files & code**
+- \`read_file\` — read with line numbers; supports images. Prefer over \`bash cat\`.
+- \`write_file\` — create/overwrite a file.
+- \`edit_file\` — exact string replacement in a file. Prefer over rewriting.
+- \`multi_edit\` — several edits to one file atomically.
+- \`filesystem\` — list/delete/append/mkdir/exists.
+
+**Search**
+- \`glob\` — find files by pattern (\`**/*.ts\`). \`grep\` — search file contents by regex. Prefer over \`bash find\`/\`grep\`.
+
+**Execution**
+- \`bash\` — run commands. For long-running processes (dev servers) pass \`run_in_background:true\`, then read with \`bash_output\` and stop with \`kill_shell\`.
+
+**Web** — \`web_search\` (discover) and \`web_fetch\` (read a URL).
+
+**Planning** — \`todo_write\` for any multi-step task; keep it updated as a live checklist.
+
+**macOS automation & computer use**
+- \`applescript\` — script native apps (Notes, Mail, Calendar, Finder, System Events). Prefer this over pixel-clicking.
+- \`computer\` — screenshot + mouse + keyboard + scroll. ALWAYS screenshot first, act on what you see, then screenshot to verify. Requires Screen Recording + Accessibility permissions.
+- \`clipboard\` — read/write the macOS clipboard. \`open\` — open files/folders/URLs or launch apps. \`notify\` — native notification (optionally speak) to get the user's attention.
+- \`image_gen\` — generate an image from a text prompt (saved to the workspace).
+
+Safety: never click links from untrusted email/messages; confirm destructive or financial actions with the user before doing them.
+
+`
+
+function buildSkillsSection(skills: Array<{ id: string; name: string; description: string; when_to_use?: string }>): string {
+  if (skills.length === 0) return ''
+  const lines = skills
+    .map(s => `- \`${s.id}\` — **${s.name}**: ${s.description}${s.when_to_use ? ` _(Use when: ${s.when_to_use})_` : ''}`)
+    .join('\n')
+  return `# Skills — enabled playbooks
+
+You have these skills enabled. Each is a detailed playbook for a domain. When a task matches one, call the \`skill\` tool with its id to load the full instructions BEFORE doing the work, then follow them.
+
+${lines}
+
+`
+}
+
+function buildSystemPrompt(connectedMCPs: string[] = [], enabledSkills: Array<{ id: string; name: string; description: string; when_to_use?: string }> = []): string {
   const home = os.homedir()
   const mcpSection = connectedMCPs.length > 0
     ? `# Active MCP integrations
@@ -81,7 +127,7 @@ Never create code projects in the home directory or arbitrary locations. The use
 
 For one-off scripts or experiments, you may use ${home} or /tmp.
 
-${mcpSection}# Memory
+${TOOLS_SECTION}${buildSkillsSection(enabledSkills)}${mcpSection}# Memory
 
 You have access to the full conversation history in this session. Reference what you've already done — files you created, commands you ran, decisions made. Do not say "I haven't created anything yet" if you can see prior tool calls in the conversation.
 
@@ -204,7 +250,11 @@ export class AgentLoop {
       .filter(m => m.status === 'connected')
       .map(m => m.name)
 
-    const systemPrompt = buildSystemPrompt(connectedMCPs)
+    // Enabled skills → injected so the model knows what playbooks to load via `skill`
+    const { SkillManager } = await import('../skills/SkillManager')
+    const enabledSkills = SkillManager.enabledSummaries()
+
+    const systemPrompt = buildSystemPrompt(connectedMCPs, enabledSkills)
 
     let assistantMsg: PersistedMessage | null = null
 
@@ -297,7 +347,11 @@ export class AgentLoop {
         }
 
         // Execute tools
+        // `toolResults` holds string-only content for session persistence.
+        // `apiResultBlocks` holds the rich content (incl. images) sent to the model
+        // for THIS turn only — images are never written to the flat session JSON.
         const toolResults: { type: 'tool_result'; tool_use_id: string; content: string }[] = []
+        const apiResultBlocks: ContentBlock[] = []
 
         for (const toolUse of finalMsg.toolUses) {
           assistantMsg.toolCalls!.push({
@@ -321,7 +375,20 @@ export class AgentLoop {
             result = `Error: ${err.message || String(err)}`
           }
 
-          const resultStr = typeof result === 'string' ? result : JSON.stringify(result)
+          // Normalize: image-bearing result vs plain string.
+          let apiContent: import('./providers/types').ToolResultContent
+          let resultStr: string
+          let imageBlock: { data: string; mimeType: string } | undefined
+          if (isImageToolResult(result)) {
+            apiContent = result.blocks
+            resultStr = result.display || '[image]'
+            const img = result.blocks.find(b => b.type === 'image') as any
+            if (img) imageBlock = { data: img.data, mimeType: img.mimeType }
+          } else {
+            resultStr = typeof result === 'string' ? result : JSON.stringify(result)
+            apiContent = resultStr
+          }
+
           const tc = assistantMsg.toolCalls!.find(t => t.id === toolUse.id)
           if (tc) { tc.result = resultStr; tc.status = 'done' }
 
@@ -330,14 +397,23 @@ export class AgentLoop {
             name: toolUse.name,
             input: toolUse.input,
             result: resultStr,
+            // Live image (base64) for inline rendering — NOT persisted to the session JSON
+            image: imageBlock,
             status: 'done',
             sessionId,
           })
 
+          // Persisted (string only)
           toolResults.push({
             type: 'tool_result',
             tool_use_id: toolUse.id,
             content: resultStr,
+          })
+          // Sent to model this turn (may include images)
+          apiResultBlocks.push({
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: apiContent,
           })
         }
 
@@ -352,13 +428,8 @@ export class AgentLoop {
         }
         session.messages.push(toolResultMsg)
 
-        // Add to apiMessages for next iteration
-        const resultBlocks: ContentBlock[] = toolResults.map(tr => ({
-          type: 'tool_result' as const,
-          tool_use_id: tr.tool_use_id,
-          content: tr.content,
-        }))
-        apiMessages.push({ role: 'user', content: resultBlocks })
+        // Add to apiMessages for next iteration (rich content, current turn only)
+        apiMessages.push({ role: 'user', content: apiResultBlocks })
 
         SessionStore.save(session)
       }

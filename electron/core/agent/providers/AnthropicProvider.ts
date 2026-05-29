@@ -12,8 +12,20 @@ export class AnthropicProvider implements ChatProvider {
       if (typeof m.content === 'string') {
         return { role: m.role, content: m.content }
       }
-      // Map content blocks to Anthropic's format (they're already compatible)
-      return { role: m.role, content: m.content as any }
+      const blocks = m.content.map(b => {
+        if (b.type === 'tool_result') {
+          // tool_result.content may be a string or an array of text/image blocks
+          if (typeof b.content === 'string') return b
+          const inner = b.content.map(c =>
+            c.type === 'image'
+              ? { type: 'image', source: { type: 'base64', media_type: c.mimeType, data: c.data } }
+              : { type: 'text', text: c.text }
+          )
+          return { type: 'tool_result', tool_use_id: b.tool_use_id, content: inner }
+        }
+        return b
+      })
+      return { role: m.role, content: blocks as any }
     })
 
     const stream = await client.messages.stream({

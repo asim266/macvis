@@ -81,7 +81,21 @@ export function ToolCallCard({ toolCall }: { toolCall: ToolCall }) {
           {toolCall.status}
         </span>
       </div>
-      {toolCall.result && (
+      {toolCall.image && (
+        <div style={{ borderTop: '1px solid var(--line-1)', background: 'var(--surface-1)' }}>
+          <img
+            src={`data:${toolCall.image.mimeType};base64,${toolCall.image.data}`}
+            alt="tool output"
+            style={{ display: 'block', maxWidth: '100%', maxHeight: 360, objectFit: 'contain' }}
+          />
+          {toolCall.result && (
+            <div style={{ padding: '6px 12px', fontSize: 10.5, color: 'var(--ink-4)', fontFamily: 'var(--font-mono)' }}>
+              {String(toolCall.result).slice(0, 200)}
+            </div>
+          )}
+        </div>
+      )}
+      {toolCall.result && !toolCall.image && (
         <pre
           style={{
             margin: 0,
