@@ -93,6 +93,8 @@ You have a full coding-agent toolset. Pick the most specific tool:
 
 **Delegation** — \`task\` runs a focused subtask in an autonomous sub-agent (full toolset) and returns its result. Use it to offload self-contained work (research, a refactor, data gathering) without cluttering the main thread.
 
+**Vision** — \`ocr\` pulls literal text out of an image file (screenshot/scan) via on-device macOS Vision. Use it when you need the exact text rather than a description.
+
 **Planning** — \`todo_write\` for any multi-step task; keep it updated as a live checklist.
 
 **macOS automation & computer use**

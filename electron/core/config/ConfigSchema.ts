@@ -69,6 +69,8 @@ export const defaultConfig = {
     // Native tools the user has turned off (by tool name).
     disabled: [] as string[],
   },
+  // Inbound webhook trigger server (localhost only, token-gated).
+  webhooks: { enabled: false, port: 8787, secret: '' },
   ui: { theme: 'system', fontSize: 'medium', sidebarOpen: true, accent: 'green' as 'green' | 'red' | 'blue' | 'white', speakResponses: false },
   telegram: { enabled: false, runOnStartup: false },
 }

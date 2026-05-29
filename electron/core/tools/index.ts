@@ -27,6 +27,7 @@ import { SkillTool } from './SkillTool'
 import { ConfigStore } from '../config/ConfigStore'
 import { MCPManager } from '../mcp/MCPManager'
 import { SubagentTool } from './SubagentTool'
+import { OcrTool } from './OcrTool'
 import { checkProtectedPath, FILE_MUTATING_TOOLS, pathFromToolInput } from '../security/sandbox'
 
 const TOOLS = [
@@ -48,8 +49,8 @@ const TOOLS = [
   DocumentTool, CreateDocumentTool, RagTool,
   // Orchestration
   SubagentTool,
-  // Media
-  ImageGenTool,
+  // Media & vision
+  ImageGenTool, OcrTool,
 ]
 
 /** Tool definitions the model can see, excluding any the user disabled in Settings. */

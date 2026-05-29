@@ -93,6 +93,15 @@ app.whenReady().then(async () => {
       try { Scheduler.start() } catch (err) { console.error('Scheduler start error:', err) }
     })
 
+    // Auto-start the webhook trigger server if enabled
+    import('./core/config/ConfigStore').then(({ ConfigStore }) => {
+      if (ConfigStore.getInstance().get('webhooks.enabled')) {
+        import('./core/webhooks/WebhookServer').then(({ WebhookServer }) => {
+          WebhookServer.start().then(r => { if (!r.ok) console.warn('Webhook server start failed:', r.error) })
+        })
+      }
+    })
+
     // Auto-start Telegram bot if configured to run on startup
     import('./core/config/ConfigStore').then(({ ConfigStore }) => {
       const config = ConfigStore.getInstance()

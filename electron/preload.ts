@@ -124,6 +124,16 @@ contextBridge.exposeInMainWorld('macvis', {
     transcribe: (audio: string, mimeType: string) => ipcRenderer.invoke('voice:transcribe', { audio, mimeType }),
   },
 
+  webhook: {
+    start: () => ipcRenderer.invoke('webhook:start'),
+    stop: () => ipcRenderer.invoke('webhook:stop'),
+    status: () => ipcRenderer.invoke('webhook:status'),
+  },
+
+  audit: {
+    tail: (n?: number) => ipcRenderer.invoke('audit:tail', { n }),
+  },
+
   terminal: {
     create: (cwd?: string) => ipcRenderer.invoke('terminal:create', { cwd }),
     input: (id: string, data: string) => ipcRenderer.invoke('terminal:input', { id, data }),
