@@ -11,7 +11,7 @@ import os from 'os'
 
 const DEFAULT_CHAIN_FALLBACK = 'anthropic:claude-opus-4-5'
 
-const PROVIDER_KEY_PATH: Record<ProviderName, string> = {
+export const PROVIDER_KEY_PATH: Record<ProviderName, string> = {
   anthropic: 'apiKeys.anthropic',
   openai: 'apiKeys.openai',
   openrouter: 'apiKeys.openrouter',
@@ -45,7 +45,11 @@ You have a full coding-agent toolset. Pick the most specific tool:
 - \`applescript\` — script native apps (Notes, Mail, Calendar, Finder, System Events). Prefer this over pixel-clicking.
 - \`computer\` — screenshot + mouse + keyboard + scroll. ALWAYS screenshot first, act on what you see, then screenshot to verify. Requires Screen Recording + Accessibility permissions.
 - \`clipboard\` — read/write the macOS clipboard. \`open\` — open files/folders/URLs or launch apps. \`notify\` — native notification (optionally speak) to get the user's attention.
+- \`system_control\` — volume, mute, dark/light mode, lock screen, sleep display, battery. \`spotlight\` — find files anywhere via Spotlight (mdfind).
+- \`mail\`, \`calendar\`, \`reminders\`, \`contacts\` — read & act in the native macOS apps. Confirm before sending mail or creating events on the user's behalf.
 - \`image_gen\` — generate an image from a text prompt (saved to the workspace).
+
+**Memory** — \`memory\`: persist durable facts about the user/projects with \`remember\`; look them up with \`recall\`. Use it whenever you learn something worth keeping across conversations.
 
 Safety: never click links from untrusted email/messages; confirm destructive or financial actions with the user before doing them.
 
@@ -65,7 +69,18 @@ ${lines}
 `
 }
 
-function buildSystemPrompt(connectedMCPs: string[] = [], enabledSkills: Array<{ id: string; name: string; description: string; when_to_use?: string }> = []): string {
+function buildMemorySection(summary: string): string {
+  if (!summary) return ''
+  return `# What you remember about the user
+
+These are durable facts you saved previously (via the \`memory\` tool). Use them; keep them current with \`memory remember\`/\`forget\`.
+
+${summary}
+
+`
+}
+
+function buildSystemPrompt(connectedMCPs: string[] = [], enabledSkills: Array<{ id: string; name: string; description: string; when_to_use?: string }> = [], memorySummary = ''): string {
   const home = os.homedir()
   const mcpSection = connectedMCPs.length > 0
     ? `# Active MCP integrations
@@ -127,7 +142,7 @@ Never create code projects in the home directory or arbitrary locations. The use
 
 For one-off scripts or experiments, you may use ${home} or /tmp.
 
-${TOOLS_SECTION}${buildSkillsSection(enabledSkills)}${mcpSection}# Memory
+${TOOLS_SECTION}${buildSkillsSection(enabledSkills)}${buildMemorySection(memorySummary)}${mcpSection}# Conversation memory
 
 You have access to the full conversation history in this session. Reference what you've already done — files you created, commands you ran, decisions made. Do not say "I haven't created anything yet" if you can see prior tool calls in the conversation.
 
@@ -142,7 +157,7 @@ You have access to the full conversation history in this session. Reference what
 }
 
 // Build the fallback chain — list of [provider, model] to try in order.
-function resolveChain(config: ConfigStore): Array<{ provider: ProviderName; model: string }> {
+export function resolveChain(config: ConfigStore): Array<{ provider: ProviderName; model: string }> {
   const chain: string[] = (config.get('models.chain') as string[]) || []
   const resolved: Array<{ provider: ProviderName; model: string }> = []
 
@@ -163,8 +178,40 @@ function resolveChain(config: ConfigStore): Array<{ provider: ProviderName; mode
   return resolved
 }
 
+// Patterns that warrant a human-in-the-loop confirmation before running.
+const DANGEROUS_BASH = [
+  /\brm\s+-[rf]/, /\brm\s+.*-[rf]/, /\bsudo\b/, /\bmkfs/, /\bdd\s+if=/, /\bshutdown\b/, /\breboot\b/,
+  /\bkillall\b/, /\bchmod\s+-R\s+777/, /\b>\s*\/dev\/sd/, /\bgit\s+push\b.*--force/, /\bgit\s+push\s+-f\b/,
+  /\bnpm\s+publish\b/, /\bcurl\b[^|]*\|\s*(sudo\s+)?(ba)?sh\b/, /\bdiskutil\s+(erase|reformat)/, /\bdefaults\s+delete\b/,
+]
+function isDangerousTool(name: string, input: any): { danger: boolean; reason?: string } {
+  if (name === 'bash') {
+    const cmd = String(input?.command || '')
+    for (const re of DANGEROUS_BASH) if (re.test(cmd)) return { danger: true, reason: `Potentially destructive shell command` }
+  }
+  if (name === 'filesystem' && input?.operation === 'delete') return { danger: true, reason: 'Deletes files/directories' }
+  if (name === 'mail' && input?.operation === 'send') return { danger: true, reason: 'Sends an email on your behalf' }
+  return { danger: false }
+}
+
 export class AgentLoop {
   private running = new Map<string, boolean>()
+  private pendingApprovals = new Map<string, (ok: boolean) => void>()
+
+  /** Resolve a pending HITL approval request (called from IPC). */
+  approve(id: string, ok: boolean) {
+    const r = this.pendingApprovals.get(id)
+    if (r) { this.pendingApprovals.delete(id); r(ok) }
+  }
+
+  private requestApproval(sessionId: string, toolUse: any): Promise<boolean> {
+    this.emit('agent:approval', { sessionId, id: toolUse.id, name: toolUse.name, input: toolUse.input })
+    return new Promise(resolve => {
+      this.pendingApprovals.set(toolUse.id, resolve)
+      // Safety: auto-deny if unanswered for 5 minutes so the loop never hangs forever.
+      setTimeout(() => { if (this.pendingApprovals.has(toolUse.id)) { this.pendingApprovals.delete(toolUse.id); resolve(false) } }, 300000)
+    })
+  }
 
   async run(message: string, sessionId: string) {
     const config = ConfigStore.getInstance()
@@ -254,7 +301,11 @@ export class AgentLoop {
     const { SkillManager } = await import('../skills/SkillManager')
     const enabledSkills = SkillManager.enabledSummaries()
 
-    const systemPrompt = buildSystemPrompt(connectedMCPs, enabledSkills)
+    // Long-term memory → injected so the agent remembers the user across sessions
+    const { MemoryStore } = await import('../memory/MemoryStore')
+    const memorySummary = MemoryStore.summary()
+
+    const systemPrompt = buildSystemPrompt(connectedMCPs, enabledSkills, memorySummary)
 
     let assistantMsg: PersistedMessage | null = null
 
@@ -369,6 +420,21 @@ export class AgentLoop {
           })
 
           let result: any
+          // Human-in-the-loop: gate destructive/outward actions when approval mode is on.
+          const requireApproval = config.get('tools.requireApproval') !== false
+          const dangerCheck = isDangerousTool(toolUse.name, toolUse.input)
+          if (requireApproval && dangerCheck.danger) {
+            const approved = await this.requestApproval(sessionId, toolUse)
+            if (!approved) {
+              result = `Denied by user (HITL): ${dangerCheck.reason}. The user declined this action — do not retry it; ask how to proceed instead.`
+              const tcd = assistantMsg.toolCalls!.find(t => t.id === toolUse.id)
+              if (tcd) { tcd.result = result; tcd.status = 'error' }
+              this.emit('agent:tool', { id: toolUse.id, name: toolUse.name, input: toolUse.input, result, status: 'error', sessionId })
+              toolResults.push({ type: 'tool_result', tool_use_id: toolUse.id, content: result })
+              apiResultBlocks.push({ type: 'tool_result', tool_use_id: toolUse.id, content: result })
+              continue
+            }
+          }
           try {
             result = await executeTool(toolUse.name, toolUse.input, config)
           } catch (err: any) {

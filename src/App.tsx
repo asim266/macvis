@@ -5,10 +5,11 @@ import { Settings } from './pages/Settings'
 import { MCPs } from './pages/MCPs'
 import { Projects } from './pages/Projects'
 import { Skills } from './pages/Skills'
+import { Agents } from './pages/Agents'
 import { useChatStore } from './stores/chatStore'
 import { useConfigStore } from './stores/configStore'
 
-export type Page = 'chat' | 'settings' | 'mcps' | 'skills' | 'projects'
+export type Page = 'chat' | 'settings' | 'mcps' | 'skills' | 'projects' | 'agents'
 
 export default function App() {
   const [page, setPage] = useState<Page>('chat')
@@ -43,6 +44,7 @@ export default function App() {
         {page === 'mcps' && <MCPs />}
         {page === 'projects' && <Projects />}
         {page === 'skills' && <Skills />}
+        {page === 'agents' && <Agents />}
       </main>
     </div>
   )

@@ -28,12 +28,19 @@ export function Chat() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const [noApiKey, setNoApiKey] = useState(false)
   const [todos, setTodos] = useState<{ content: string; status: string; activeForm?: string }[]>([])
+  const [approval, setApproval] = useState<{ id: string; name: string; input: any } | null>(null)
 
   // Live task list emitted by the todo_write tool
   useEffect(() => {
     const unsub = window.macvis?.agent?.onTodos?.((data: any) => setTodos(data.todos || []))
-    return () => { unsub?.() }
+    const unsubApp = window.macvis?.agent?.onApproval?.((data: any) => setApproval(data))
+    return () => { unsub?.(); unsubApp?.() }
   }, [])
+
+  const respondApproval = (ok: boolean) => {
+    if (approval) window.macvis.agent.approve(approval.id, ok)
+    setApproval(null)
+  }
 
   const activeSession = sessions.find(s => s.id === activeSessionId)
 
@@ -285,6 +292,29 @@ export function Chat() {
           )}
         </div>
       </div>
+
+      {approval && (
+        <div style={{ maxWidth: 760, margin: '0 auto', width: '100%', padding: '0 32px 8px' }}>
+          <div style={{
+            background: 'oklch(68% 0.22 25 / 0.06)', border: '1px solid oklch(68% 0.22 25 / 0.35)',
+            borderRadius: 10, padding: '12px 14px',
+          }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--warn)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-mono)', marginBottom: 6 }}>
+              ⚠ Approval needed
+            </div>
+            <div style={{ fontSize: 12.5, color: 'var(--ink-1)', marginBottom: 4 }}>
+              The agent wants to run <strong>{approval.name}</strong>:
+            </div>
+            <pre style={{ margin: '0 0 10px', padding: '8px 10px', background: 'var(--surface-1)', border: '1px solid var(--line-1)', borderRadius: 6, fontSize: 11, color: 'var(--ink-2)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 140, overflow: 'auto', fontFamily: 'var(--font-mono)' }}>
+              {approval.input?.command || approval.input?.path || JSON.stringify(approval.input, null, 2)}
+            </pre>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => respondApproval(true)} style={{ flex: 1, padding: '8px', borderRadius: 7, border: '1px solid var(--accent)', background: 'var(--accent)', color: 'var(--accent-text-on)', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>Approve</button>
+              <button onClick={() => respondApproval(false)} style={{ flex: 1, padding: '8px', borderRadius: 7, border: '1px solid var(--line-2)', background: 'var(--surface-3)', color: 'var(--ink-1)', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>Deny</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {todos.length > 0 && (
         <div style={{
