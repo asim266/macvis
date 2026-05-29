@@ -850,6 +850,17 @@ export function Settings() {
                 </Section>
               )}
 
+              {chainOptions.length > 1 && (
+                <Section title="Smart Routing" hint="Send simple/short turns to a cheaper, faster model; complex or code-heavy turns use your primary. Failover still applies.">
+                  <Toggle checked={!!config.models?.autoRoute} onChange={v => set('models.autoRoute', v)} label="Auto-route simple turns to a faster model" />
+                  {config.models?.autoRoute && (
+                    <div style={{ marginTop: 10 }}>
+                      <ChainSlot label="Fast model" badge="⚡" value={config.models?.routeFast || ''} options={chainOptions} onChange={v => set('models.routeFast', v)} />
+                    </div>
+                  )}
+                </Section>
+              )}
+
               <Section
                 title="Providers"
                 hint="Add chat-model API keys. Click ‘Test’ to verify and load available models. Then pick a model below to use this provider in the fallback chain."

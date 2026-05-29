@@ -38,6 +38,9 @@ export const defaultConfig = {
     // Fallback chain: ordered list of "provider:model" strings, max 3 entries.
     // First entry is primary, second is fallback, third is last-resort.
     chain: [] as string[],
+    // Auto-routing: route simple turns to a cheaper/faster model when set.
+    autoRoute: false,
+    routeFast: '' as string,   // "provider:model" used for simple messages
   },
   mcps: {
     github: { enabled: false, token: '' },
@@ -71,6 +74,6 @@ export const defaultConfig = {
   },
   // Inbound webhook trigger server (localhost only, token-gated).
   webhooks: { enabled: false, port: 8787, secret: '' },
-  ui: { theme: 'system', fontSize: 'medium', sidebarOpen: true, accent: 'green' as 'green' | 'red' | 'blue' | 'white', speakResponses: false },
+  ui: { theme: 'system', fontSize: 'medium', sidebarOpen: true, accent: 'green' as 'green' | 'red' | 'blue' | 'white', speakResponses: false, onboarded: false },
   telegram: { enabled: false, runOnStartup: false },
 }
