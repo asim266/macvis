@@ -7,10 +7,11 @@ import { Projects } from './pages/Projects'
 import { Skills } from './pages/Skills'
 import { Agents } from './pages/Agents'
 import { Schedules } from './pages/Schedules'
+import { Terminal } from './pages/Terminal'
 import { useChatStore } from './stores/chatStore'
 import { useConfigStore } from './stores/configStore'
 
-export type Page = 'chat' | 'settings' | 'mcps' | 'skills' | 'projects' | 'agents' | 'schedules'
+export type Page = 'chat' | 'settings' | 'mcps' | 'skills' | 'projects' | 'agents' | 'schedules' | 'terminal'
 
 export default function App() {
   const [page, setPage] = useState<Page>('chat')
@@ -47,6 +48,7 @@ export default function App() {
         {page === 'skills' && <Skills />}
         {page === 'agents' && <Agents />}
         {page === 'schedules' && <Schedules />}
+        {page === 'terminal' && <Terminal />}
       </main>
     </div>
   )

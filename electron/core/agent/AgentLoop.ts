@@ -39,6 +39,8 @@ You have a full coding-agent toolset. Pick the most specific tool:
 
 **Web** — \`web_search\` (discover) and \`web_fetch\` (read a URL).
 
+**Documents & knowledge** — \`document\` extracts text from PDF/Word/Excel/etc. \`rag\` indexes a folder and retrieves relevant passages ("chat with your files") — index first, then search to ground answers about the user's documents.
+
 **Planning** — \`todo_write\` for any multi-step task; keep it updated as a live checklist.
 
 **macOS automation & computer use**

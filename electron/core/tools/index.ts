@@ -20,6 +20,8 @@ import { MemoryTool } from './MemoryTool'
 import { SystemControlTool } from './SystemControlTool'
 import { SpotlightTool } from './SpotlightTool'
 import { MailTool, CalendarTool, RemindersTool, ContactsTool } from './MacAppsTools'
+import { DocumentTool } from './DocumentTool'
+import { RagTool } from './RagTool'
 import { SkillTool } from './SkillTool'
 import { ConfigStore } from '../config/ConfigStore'
 import { MCPManager } from '../mcp/MCPManager'
@@ -39,6 +41,8 @@ const TOOLS = [
   AppleScriptTool, ComputerTool, ClipboardTool, NotifyTool, OpenTool, SystemControlTool, SpotlightTool,
   // macOS apps (real-life)
   MailTool, CalendarTool, RemindersTool, ContactsTool,
+  // Documents & knowledge
+  DocumentTool, RagTool,
   // Media
   ImageGenTool,
 ]

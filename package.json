@@ -38,6 +38,7 @@
     "lucide-react": "^1.14.0",
     "nanoid": "^5.1.11",
     "openai": "^6.37.0",
+    "pdf-parse": "^2.4.5",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-markdown": "^10.1.0",
@@ -46,11 +47,13 @@
     "tailwindcss": "^4.2.4",
     "telegraf": "^4.16.3",
     "three": "^0.171.0",
+    "xlsx": "^0.18.5",
     "zod": "^4.4.3",
     "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
+    "@types/pdf-parse": "^1.1.5",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.171.0",
