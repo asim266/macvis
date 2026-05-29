@@ -32,5 +32,13 @@ export const AuditLog = {
     } catch { /* auditing must never break the agent */ }
   },
 
+  /** Return the most recent N audit entries (newest last), parsed. */
+  tail(n = 100): any[] {
+    try {
+      const lines = fs.readFileSync(LOG_FILE, 'utf-8').trim().split('\n')
+      return lines.slice(-n).map(l => { try { return JSON.parse(l) } catch { return null } }).filter(Boolean)
+    } catch { return [] }
+  },
+
   path: LOG_FILE,
 }

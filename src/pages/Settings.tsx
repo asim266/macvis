@@ -374,6 +374,66 @@ function ToolToggles({ disabled, onChange }: { disabled: string[]; onChange: (ne
   )
 }
 
+// ─── Webhook controls ────────────────────────────────────────────────────────
+function WebhookControls({ config, set }: { config: any; set: (k: string, v: any) => void }) {
+  const [running, setRunning] = useState(false)
+  const [err, setErr] = useState('')
+  useEffect(() => { window.macvis.webhook?.status().then((r: any) => setRunning(!!r?.running)) }, [])
+  const port = config.webhooks?.port || 8787
+  const secret = config.webhooks?.secret || ''
+  const toggle = async () => {
+    setErr('')
+    if (running) { await window.macvis.webhook.stop(); setRunning(false); set('webhooks.enabled', false) }
+    else {
+      const r = await window.macvis.webhook.start()
+      if (r.ok) { setRunning(true); set('webhooks.enabled', true) } else setErr(r.error || 'failed')
+    }
+  }
+  return (
+    <div>
+      <KeyInput label="Secret token" hint="Required. Sent as the x-macvis-token header." configKey="webhooks.secret" value={secret} onSave={set} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+        <span style={{ fontSize: 11, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)' }}>Port</span>
+        <input type="number" value={port} onChange={e => set('webhooks.port', Number(e.target.value))}
+          style={{ width: 90, background: 'var(--surface-3)', border: '1px solid var(--line-1)', borderRadius: 7, color: 'var(--ink-1)', fontSize: 12.5, padding: '6px 8px', outline: 'none', fontFamily: 'var(--font-mono)' }} />
+        <button onClick={toggle} disabled={!secret}
+          style={{ marginLeft: 'auto', padding: '7px 14px', borderRadius: 7, border: '1px solid', borderColor: running ? 'var(--err)' : 'var(--accent)', background: running ? 'oklch(68% 0.22 25 / 0.12)' : 'var(--accent)', color: running ? 'var(--err)' : 'var(--accent-text-on)', fontSize: 12, fontWeight: 600, cursor: secret ? 'pointer' : 'default', opacity: secret ? 1 : 0.5 }}>
+          {running ? 'Stop server' : 'Start server'}
+        </button>
+      </div>
+      {running && (
+        <p style={{ fontSize: 11, color: 'var(--ink-4)', fontFamily: 'var(--font-mono)', lineHeight: 1.6 }}>
+          curl -X POST localhost:{port}/run -H "x-macvis-token: {secret ? '•••' : 'TOKEN'}" -d '{'{'}"prompt":"…"{'}'}'
+        </p>
+      )}
+      {err && <p style={{ fontSize: 11.5, color: 'var(--err)', marginTop: 6 }}>{err}</p>}
+    </div>
+  )
+}
+
+// ─── Audit viewer ────────────────────────────────────────────────────────────
+function AuditViewer() {
+  const [rows, setRows] = useState<any[]>([])
+  const load = () => window.macvis.audit?.tail(60).then((r: any) => setRows((r || []).reverse()))
+  useEffect(() => { load() }, [])
+  return (
+    <div>
+      <button onClick={load} style={{ marginBottom: 8, padding: '5px 10px', borderRadius: 6, border: '1px solid var(--line-2)', background: 'var(--surface-3)', color: 'var(--ink-2)', fontSize: 11, cursor: 'pointer' }}>Refresh</button>
+      <div style={{ maxHeight: 240, overflow: 'auto', border: '1px solid var(--line-1)', borderRadius: 8, background: 'var(--surface-1)' }}>
+        {rows.length === 0 && <div style={{ padding: 12, fontSize: 12, color: 'var(--ink-4)' }}>No activity yet.</div>}
+        {rows.map((r, i) => (
+          <div key={i} style={{ padding: '6px 10px', borderBottom: '1px solid var(--line-1)', fontSize: 10.5, fontFamily: 'var(--font-mono)', display: 'flex', gap: 8, color: 'var(--ink-3)' }}>
+            <span style={{ color: r.denied ? 'var(--err)' : r.ok ? 'var(--ok)' : 'var(--warn)' }}>{r.denied ? '⊘' : r.ok ? '✓' : '✗'}</span>
+            <span style={{ color: 'var(--ink-1)', minWidth: 110 }}>{r.tool}</span>
+            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.input}</span>
+            <span>{new Date(r.ts).toLocaleTimeString()}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ─── Section ──────────────────────────────────────────────────────────────────
 function Section({ title, children, hint }: { title: string; children: React.ReactNode; hint?: string }) {
   return (
@@ -908,6 +968,14 @@ export function Settings() {
                   disabled={(config.tools?.disabled as string[]) || []}
                   onChange={next => set('tools.disabled', next)}
                 />
+              </Section>
+
+              <Section title="Webhook Triggers" hint="Let external automations (Shortcuts, curl, cron) trigger an agent run via a localhost-only, token-gated endpoint.">
+                <WebhookControls config={config} set={set} />
+              </Section>
+
+              <Section title="Activity Log" hint="Every tool the agent runs is recorded locally (secrets redacted) in ~/.macvis/logs/audit.log.">
+                <AuditViewer />
               </Section>
 
               <Section title="Crypto / Web3" hint="Used by the Crypto pack — on-chain reads, contract verification, prices.">
