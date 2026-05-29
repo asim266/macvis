@@ -53,10 +53,11 @@ export function Chat() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [activeSession?.messages.length, activeSession?.messages[activeSession.messages.length - 1]?.content])
 
-  const handleSend = useCallback(async (text: string) => {
+  const handleSend = useCallback(async (text: string, attachments?: any[]) => {
     if (!activeSessionId) return
 
     const config = await window.macvis.config.get()
+    const speak = !!config?.ui?.speakResponses
     // Check that AT LEAST ONE chat provider has a key configured. The agent's
     // fallback chain will pick whichever is set. Ollama uses a URL (no key
     // required) so it counts as "configured" if set.
@@ -108,6 +109,10 @@ export function Chat() {
         if (data.title) {
           useChatStore.getState().updateSessionTitle(activeSessionId, data.title)
         }
+        if (speak) {
+          const msg = useChatStore.getState().sessions.find(s => s.id === activeSessionId)?.messages.find(m => m.id === assistantId)
+          if (msg?.content) window.macvis.voice?.speak?.(msg.content)
+        }
         unsubs.forEach(u => u())
       }
     }))
@@ -121,7 +126,7 @@ export function Chat() {
       }
     }))
 
-    await window.macvis.agent.run(text, activeSessionId)
+    await window.macvis.agent.run(text, activeSessionId, attachments)
   }, [activeSessionId, addMessage, appendStream, addOrUpdateToolCall, setStreaming, setStreamingMessageId])
 
   const handleStop = useCallback(() => {

@@ -111,6 +111,8 @@ function toGeminiContents(messages: CommonMessage[]): any[] {
     for (const b of m.content) {
       if (b.type === 'text') {
         parts.push({ text: b.text })
+      } else if ((b as any).type === 'image') {
+        parts.push({ inlineData: { mimeType: (b as any).mimeType, data: (b as any).data } })
       } else if (b.type === 'tool_use') {
         // Sanitize the name the same way we did when registering the tool —
         // otherwise Gemini sees a mismatch.

@@ -60,6 +60,6 @@ export const defaultConfig = {
     // (rm -rf, sudo, file deletes, sending mail, etc.).
     requireApproval: true,
   },
-  ui: { theme: 'system', fontSize: 'medium', sidebarOpen: true, accent: 'green' as 'green' | 'red' | 'blue' | 'white' },
+  ui: { theme: 'system', fontSize: 'medium', sidebarOpen: true, accent: 'green' as 'green' | 'red' | 'blue' | 'white', speakResponses: false },
   telegram: { enabled: false, runOnStartup: false },
 }

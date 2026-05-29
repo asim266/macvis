@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, shell, session } from 'electron'
 import { join } from 'path'
 import { setupIPCHandlers } from './ipc'
 
@@ -39,6 +39,9 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
+  // Local-first desktop app: grant renderer permission requests (mic for voice input, etc.).
+  session.defaultSession.setPermissionRequestHandler((_wc, _permission, cb) => cb(true))
+
   setupIPCHandlers()
   createWindow()
 
@@ -54,6 +57,11 @@ app.whenReady().then(async () => {
       MCPManager.getInstance().connectAllEnabled().catch(err => {
         console.error('MCP auto-connect error:', err)
       })
+    })
+
+    // Start the task scheduler (fires saved schedules on their cadence)
+    import('./core/scheduler/Scheduler').then(({ Scheduler }) => {
+      try { Scheduler.start() } catch (err) { console.error('Scheduler start error:', err) }
     })
 
     // Auto-start Telegram bot if configured to run on startup

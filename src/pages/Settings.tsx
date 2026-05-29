@@ -924,6 +924,13 @@ export function Settings() {
                   onChange={v => set('ui.accent', v)}
                 />
               </Section>
+              <Section title="Voice" hint="Speak assistant replies aloud (ElevenLabs if its key is set, otherwise the macOS voice). Voice input (mic) in chat needs an OpenAI or Groq key.">
+                <Toggle
+                  checked={!!config.ui?.speakResponses}
+                  onChange={v => set('ui.speakResponses', v)}
+                  label="Speak responses aloud"
+                />
+              </Section>
               <Section title="Theme">
                 <PillGroup options={['system', 'dark', 'light'] as const} value={(config.ui?.theme || 'system') as any} onChange={v => set('ui.theme', v)} />
               </Section>
