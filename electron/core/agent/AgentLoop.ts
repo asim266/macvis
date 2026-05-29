@@ -39,7 +39,7 @@ You have a full coding-agent toolset. Pick the most specific tool:
 
 **Web** — \`web_search\` (discover) and \`web_fetch\` (read a URL).
 
-**Documents & knowledge** — \`document\` extracts text from PDF/Word/Excel/etc. \`rag\` indexes a folder and retrieves relevant passages ("chat with your files") — index first, then search to ground answers about the user's documents.
+**Documents & knowledge** — \`document\` extracts text from PDF/Word/Excel/etc. \`create_document\` generates real Word/Excel/PowerPoint (and txt/md/csv) files. \`rag\` indexes a folder and retrieves relevant passages ("chat with your files") — index first, then search to ground answers about the user's documents.
 
 **Planning** — \`todo_write\` for any multi-step task; keep it updated as a live checklist.
 
@@ -206,8 +206,8 @@ export class AgentLoop {
     if (r) { this.pendingApprovals.delete(id); r(ok) }
   }
 
-  private requestApproval(sessionId: string, toolUse: any): Promise<boolean> {
-    this.emit('agent:approval', { sessionId, id: toolUse.id, name: toolUse.name, input: toolUse.input })
+  private requestApproval(sessionId: string, toolUse: any, extra?: { reason?: string; diff?: string }): Promise<boolean> {
+    this.emit('agent:approval', { sessionId, id: toolUse.id, name: toolUse.name, input: toolUse.input, reason: extra?.reason, diff: extra?.diff })
     return new Promise(resolve => {
       this.pendingApprovals.set(toolUse.id, resolve)
       // Safety: auto-deny if unanswered for 5 minutes so the loop never hangs forever.
@@ -435,13 +435,32 @@ export class AgentLoop {
           })
 
           let result: any
-          // Human-in-the-loop: gate destructive/outward actions when approval mode is on.
+          // Human-in-the-loop: gate destructive/outward actions when approval mode is on,
+          // and (optionally) gate file edits — showing a diff for review.
           const requireApproval = config.get('tools.requireApproval') !== false
+          const approveEdits = config.get('tools.approveEdits') === true
+          const EDIT_TOOLS = new Set(['write_file', 'edit_file', 'multi_edit'])
+          const isEdit = EDIT_TOOLS.has(toolUse.name)
           const dangerCheck = isDangerousTool(toolUse.name, toolUse.input)
-          if (requireApproval && dangerCheck.danger) {
-            const approved = await this.requestApproval(sessionId, toolUse)
+          const gate = (requireApproval && dangerCheck.danger) || (approveEdits && isEdit)
+          if (gate) {
+            // For edit tools, compute a diff preview so the user reviews the change.
+            let diff: string | undefined
+            let reason = dangerCheck.reason
+            if (isEdit) {
+              try {
+                const { getTool } = await import('../tools')
+                const t: any = getTool(toolUse.name)
+                if (t?.preview) {
+                  const p = await t.preview(toolUse.input)
+                  diff = p?.diff
+                  reason = reason || p?.summary || 'Proposed file change'
+                }
+              } catch { /* fall through without diff */ }
+            }
+            const approved = await this.requestApproval(sessionId, toolUse, { reason, diff })
             if (!approved) {
-              result = `Denied by user (HITL): ${dangerCheck.reason}. The user declined this action — do not retry it; ask how to proceed instead.`
+              result = `Denied by user (HITL): ${reason || dangerCheck.reason || 'action declined'}. The user declined this action — do not retry it; ask how to proceed instead.`
               const tcd = assistantMsg.toolCalls!.find(t => t.id === toolUse.id)
               if (tcd) { tcd.result = result; tcd.status = 'error' }
               this.emit('agent:tool', { id: toolUse.id, name: toolUse.name, input: toolUse.input, result, status: 'error', sessionId })

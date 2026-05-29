@@ -21,6 +21,7 @@ import { SystemControlTool } from './SystemControlTool'
 import { SpotlightTool } from './SpotlightTool'
 import { MailTool, CalendarTool, RemindersTool, ContactsTool } from './MacAppsTools'
 import { DocumentTool } from './DocumentTool'
+import { CreateDocumentTool } from './CreateDocumentTool'
 import { RagTool } from './RagTool'
 import { SkillTool } from './SkillTool'
 import { ConfigStore } from '../config/ConfigStore'
@@ -42,13 +43,18 @@ const TOOLS = [
   // macOS apps (real-life)
   MailTool, CalendarTool, RemindersTool, ContactsTool,
   // Documents & knowledge
-  DocumentTool, RagTool,
+  DocumentTool, CreateDocumentTool, RagTool,
   // Media
   ImageGenTool,
 ]
 
 export function getToolDefinitions() {
   return TOOLS.map(t => t.definition)
+}
+
+/** Look up a registered native tool by name (for preview/dry-run, etc.). */
+export function getTool(name: string): any {
+  return TOOLS.find(t => t.definition.name === name)
 }
 
 export async function executeTool(name: string, input: any, config: ConfigStore) {

@@ -8,6 +8,23 @@ declare const window: any
 import { MessageBubble } from '../components/chat/MessageBubble'
 import { ChatInput } from '../components/chat/ChatInput'
 
+// Renders a unified-diff (or plain code) block with +/- line coloring.
+export function DiffBlock({ text }: { text: string }) {
+  const body = (text || '').replace(/```diff\n?|```/g, '')
+  const lines = body.split('\n')
+  return (
+    <pre style={{ margin: '0 0 10px', padding: '8px 10px', background: 'var(--surface-1)', border: '1px solid var(--line-1)', borderRadius: 6, fontSize: 11, whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 260, overflow: 'auto', fontFamily: 'var(--font-mono)', lineHeight: 1.5 }}>
+      {lines.map((l, i) => {
+        const add = l.startsWith('+'), del = l.startsWith('-')
+        return <div key={i} style={{
+          color: add ? 'var(--ok)' : del ? 'var(--err)' : 'var(--ink-3)',
+          background: add ? 'oklch(72% 0.155 150 / 0.08)' : del ? 'oklch(68% 0.22 25 / 0.08)' : 'transparent',
+        }}>{l || ' '}</div>
+      })}
+    </pre>
+  )
+}
+
 const QUICK_PROMPTS = [
   'List my GitHub repos',
   'What changed in my Downloads today?',
@@ -28,7 +45,7 @@ export function Chat() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const [noApiKey, setNoApiKey] = useState(false)
   const [todos, setTodos] = useState<{ content: string; status: string; activeForm?: string }[]>([])
-  const [approval, setApproval] = useState<{ id: string; name: string; input: any } | null>(null)
+  const [approval, setApproval] = useState<{ id: string; name: string; input: any; reason?: string; diff?: string } | null>(null)
 
   // Live task list emitted by the todo_write tool
   useEffect(() => {
@@ -307,12 +324,10 @@ export function Chat() {
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--warn)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-mono)', marginBottom: 6 }}>
               ⚠ Approval needed
             </div>
-            <div style={{ fontSize: 12.5, color: 'var(--ink-1)', marginBottom: 4 }}>
-              The agent wants to run <strong>{approval.name}</strong>:
+            <div style={{ fontSize: 12.5, color: 'var(--ink-1)', marginBottom: 6 }}>
+              The agent wants to run <strong>{approval.name}</strong>{approval.reason ? <> — <span style={{ color: 'var(--ink-3)' }}>{approval.reason}</span></> : null}:
             </div>
-            <pre style={{ margin: '0 0 10px', padding: '8px 10px', background: 'var(--surface-1)', border: '1px solid var(--line-1)', borderRadius: 6, fontSize: 11, color: 'var(--ink-2)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 140, overflow: 'auto', fontFamily: 'var(--font-mono)' }}>
-              {approval.input?.command || approval.input?.path || JSON.stringify(approval.input, null, 2)}
-            </pre>
+            <DiffBlock text={approval.diff || approval.input?.command || approval.input?.path || JSON.stringify(approval.input, null, 2)} />
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => respondApproval(true)} style={{ flex: 1, padding: '8px', borderRadius: 7, border: '1px solid var(--accent)', background: 'var(--accent)', color: 'var(--accent-text-on)', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>Approve</button>
               <button onClick={() => respondApproval(false)} style={{ flex: 1, padding: '8px', borderRadius: 7, border: '1px solid var(--line-2)', background: 'var(--surface-3)', color: 'var(--ink-1)', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>Deny</button>

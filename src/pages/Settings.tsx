@@ -860,6 +860,12 @@ export function Settings() {
                   onChange={v => set('tools.requireApproval', v)}
                   label="Require my approval for risky actions (recommended)"
                 />
+                <div style={{ height: 10 }} />
+                <Toggle
+                  checked={!!config.tools?.approveEdits}
+                  onChange={v => set('tools.approveEdits', v)}
+                  label="Also review a diff before every file edit"
+                />
               </Section>
 
               <Section title="Crypto / Web3" hint="Used by the Crypto pack — on-chain reads, contract verification, prices.">
