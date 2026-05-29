@@ -95,7 +95,15 @@ export function ToolCallCard({ toolCall }: { toolCall: ToolCall }) {
           )}
         </div>
       )}
-      {toolCall.result && !toolCall.image && (
+      {toolCall.result && !toolCall.image && String(toolCall.result).includes('```diff') && (
+        <pre style={{ margin: 0, padding: '10px 12px', fontSize: 11.5, lineHeight: 1.55, maxHeight: 280, overflow: 'auto', background: 'var(--surface-1)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'var(--font-mono)' }} className="selectable">
+          {String(toolCall.result).slice(0, 4000).replace(/```diff\n?|```/g, '').split('\n').map((l, i) => {
+            const add = l.startsWith('+'), del = l.startsWith('-')
+            return <div key={i} style={{ color: add ? 'var(--ok)' : del ? 'var(--err)' : 'var(--ink-2)', background: add ? 'oklch(72% 0.155 150 / 0.08)' : del ? 'oklch(68% 0.22 25 / 0.08)' : 'transparent' }}>{l || ' '}</div>
+          })}
+        </pre>
+      )}
+      {toolCall.result && !toolCall.image && !String(toolCall.result).includes('```diff') && (
         <pre
           style={{
             margin: 0,

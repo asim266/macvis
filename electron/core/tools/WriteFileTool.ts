@@ -1,8 +1,18 @@
 import fs from 'fs/promises'
 import path from 'path'
+import { unifiedDiff, newFileDiff } from './diff'
 
 function resolve(p: string): string {
   return p.startsWith('~') ? p.replace('~', process.env.HOME || '') : p
+}
+
+async function diffFor(resolved: string, content: string): Promise<string> {
+  try {
+    const existing = await fs.readFile(resolved, 'utf-8')
+    return unifiedDiff(existing, content ?? '', resolved)
+  } catch {
+    return newFileDiff(content ?? '', resolved)
+  }
 }
 
 export const WriteFileTool = {
@@ -21,11 +31,17 @@ export const WriteFileTool = {
     },
   },
 
+  async preview({ path: filePath, content }: any) {
+    const resolved = resolve(filePath)
+    return { diff: await diffFor(resolved, content ?? ''), summary: `Write ${Buffer.byteLength(content ?? '')} bytes to ${resolved}` }
+  },
+
   async execute({ path: filePath, content }: any) {
     const resolved = resolve(filePath)
+    const diff = await diffFor(resolved, content ?? '')
     await fs.mkdir(path.dirname(resolved), { recursive: true })
     await fs.writeFile(resolved, content ?? '')
     const bytes = Buffer.byteLength(content ?? '')
-    return `Wrote ${bytes} bytes to ${resolved}`
+    return `Wrote ${bytes} bytes to ${resolved}\n\n${diff}`
   },
 }

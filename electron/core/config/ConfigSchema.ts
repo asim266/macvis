@@ -59,6 +59,9 @@ export const defaultConfig = {
     // Human-in-the-loop: pause for confirmation before destructive/outward actions
     // (rm -rf, sudo, file deletes, sending mail, etc.).
     requireApproval: true,
+    // When on, file edits (write_file/edit_file/multi_edit) also pause and show a
+    // diff for review before applying.
+    approveEdits: false,
   },
   ui: { theme: 'system', fontSize: 'medium', sidebarOpen: true, accent: 'green' as 'green' | 'red' | 'blue' | 'white', speakResponses: false },
   telegram: { enabled: false, runOnStartup: false },
