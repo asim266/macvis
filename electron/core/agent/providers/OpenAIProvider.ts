@@ -79,11 +79,14 @@ function toOpenAIMessages(system: string, messages: CommonMessage[]) {
           out.push({ role: 'user', content: trailingImages })
         }
       } else {
-        const text = m.content
-          .filter(b => b.type === 'text')
-          .map((b: any) => b.text)
-          .join('')
-        if (text) out.push({ role: 'user', content: text })
+        // Plain user message — may carry text + image blocks (attachments / vision)
+        const parts: any[] = []
+        for (const b of m.content) {
+          if (b.type === 'text') parts.push({ type: 'text', text: b.text })
+          else if ((b as any).type === 'image') parts.push({ type: 'image_url', image_url: { url: `data:${(b as any).mimeType};base64,${(b as any).data}` } })
+        }
+        if (parts.length === 1 && parts[0].type === 'text') out.push({ role: 'user', content: parts[0].text })
+        else if (parts.length) out.push({ role: 'user', content: parts })
       }
     }
   }

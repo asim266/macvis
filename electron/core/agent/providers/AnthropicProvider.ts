@@ -23,6 +23,9 @@ export class AnthropicProvider implements ChatProvider {
           )
           return { type: 'tool_result', tool_use_id: b.tool_use_id, content: inner }
         }
+        if (b.type === 'image') {
+          return { type: 'image', source: { type: 'base64', media_type: (b as any).mimeType, data: (b as any).data } }
+        }
         return b
       })
       return { role: m.role, content: blocks as any }

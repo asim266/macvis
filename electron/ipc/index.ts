@@ -4,6 +4,8 @@ import { setupMCPHandlers } from './mcpHandlers'
 import { setupSkillsHandlers } from './skillsHandlers'
 import { setupPacksHandlers } from './packsHandlers'
 import { setupTeamsHandlers } from './teamsHandlers'
+import { setupSchedulerHandlers } from './schedulerHandlers'
+import { setupVoiceHandlers } from './voiceHandlers'
 import { setupTelegramHandlers } from './telegramHandlers'
 import { setupProviderHandlers } from './providerHandlers'
 import { setupSessionHandlers } from './sessionHandlers'
@@ -16,6 +18,8 @@ export function setupIPCHandlers() {
   setupSkillsHandlers()
   setupPacksHandlers()
   setupTeamsHandlers()
+  setupSchedulerHandlers()
+  setupVoiceHandlers()
   setupTelegramHandlers()
   setupProviderHandlers()
   setupSessionHandlers()

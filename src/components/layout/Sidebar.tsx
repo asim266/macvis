@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Settings as SettingsIcon, Plug, Sparkles, Folder, MessageSquare, Trash2, Bot } from 'lucide-react'
+import { Plus, Settings as SettingsIcon, Plug, Sparkles, Folder, MessageSquare, Trash2, Bot, Clock } from 'lucide-react'
 import { useChatStore } from '../../stores/chatStore'
 import { useConfigStore } from '../../stores/configStore'
 import type { Page } from '../../App'
@@ -11,6 +11,7 @@ interface Props {
 
 const NAV_ITEMS: { id: Page; icon: React.ReactNode; label: string }[] = [
   { id: 'agents', icon: <Bot size={15} />, label: 'Agent Teams' },
+  { id: 'schedules', icon: <Clock size={15} />, label: 'Schedules' },
   { id: 'projects', icon: <Folder size={15} />, label: 'Projects' },
   { id: 'mcps', icon: <Plug size={15} />, label: 'Integrations' },
   { id: 'skills', icon: <Sparkles size={15} />, label: 'Skills' },

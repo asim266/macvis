@@ -213,7 +213,7 @@ export class AgentLoop {
     })
   }
 
-  async run(message: string, sessionId: string) {
+  async run(message: string, sessionId: string, attachments?: Array<{ data: string; mimeType: string; name?: string }>) {
     const config = ConfigStore.getInstance()
     const chain = resolveChain(config)
 
@@ -285,6 +285,19 @@ export class AgentLoop {
         apiMessages.push({ role: 'assistant', content })
       } else if (m.role === 'assistant') {
         apiMessages.push({ role: 'assistant', content: m.content || ' ' })
+      }
+    }
+
+    // Attach image attachments to THIS turn's user message only (not persisted to disk).
+    if (attachments?.length) {
+      const lastUser = apiMessages[apiMessages.length - 1]
+      if (lastUser && lastUser.role === 'user' && typeof lastUser.content === 'string') {
+        const imgs = attachments
+          .filter(a => a.mimeType?.startsWith('image/'))
+          .map(a => ({ type: 'image' as const, data: a.data, mimeType: a.mimeType }))
+        if (imgs.length) {
+          lastUser.content = [{ type: 'text', text: lastUser.content || message }, ...imgs as any]
+        }
       }
     }
 

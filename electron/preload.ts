@@ -2,8 +2,8 @@ import { contextBridge, ipcRenderer } from 'electron'
 
 contextBridge.exposeInMainWorld('macvis', {
   agent: {
-    run: (message: string, sessionId: string) =>
-      ipcRenderer.invoke('agent:run', { message, sessionId }),
+    run: (message: string, sessionId: string, attachments?: any[]) =>
+      ipcRenderer.invoke('agent:run', { message, sessionId, attachments }),
     stop: (sessionId: string) =>
       ipcRenderer.invoke('agent:stop', { sessionId }),
     approve: (id: string, ok: boolean) =>
@@ -97,6 +97,25 @@ contextBridge.exposeInMainWorld('macvis', {
       ipcRenderer.on('team:hitl', handler)
       return () => ipcRenderer.removeListener('team:hitl', handler)
     },
+  },
+
+  scheduler: {
+    list: () => ipcRenderer.invoke('scheduler:list'),
+    create: (input: any) => ipcRenderer.invoke('scheduler:create', input),
+    update: (id: string, patch: any) => ipcRenderer.invoke('scheduler:update', { id, patch }),
+    remove: (id: string) => ipcRenderer.invoke('scheduler:remove', { id }),
+    runNow: (id: string) => ipcRenderer.invoke('scheduler:runNow', { id }),
+    onUpdate: (cb: (data: any) => void) => {
+      const handler = (_: any, data: any) => cb(data)
+      ipcRenderer.on('scheduler:update', handler)
+      return () => ipcRenderer.removeListener('scheduler:update', handler)
+    },
+  },
+
+  voice: {
+    speak: (text: string) => ipcRenderer.invoke('voice:speak', { text }),
+    stopSpeaking: () => ipcRenderer.invoke('voice:stopSpeaking'),
+    transcribe: (audio: string, mimeType: string) => ipcRenderer.invoke('voice:transcribe', { audio, mimeType }),
   },
 
   packs: {
