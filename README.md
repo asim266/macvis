@@ -49,6 +49,20 @@ Built for developers who want a real agent to drive their environment, without s
 - 🚫 **No database, no telemetry** — everything is flat JSON in `~/.macvis/`. Inspect, back up, sync — you own it.
 - 🎨 **Distinctive UI** — refined dark theme with warm-red accent, Geist typography, OKLCH-based design tokens. Inspired by Linear and Raycast.
 
+### Full agent harness
+- 🛠️ **35+ native tools** — `read_file` / `write_file` / `edit_file` / `multi_edit`, `glob`, `grep`, `bash` (+ background shells via `bash_output` / `kill_shell`), `web_search`, `web_fetch`, `todo_write`, and a `task` tool that spawns autonomous **sub-agents**.
+- 🖥️ **Computer use with vision** — `computer` takes screenshots and drives the mouse/keyboard (shell backend by default, optional nut-js); `applescript`, `clipboard`, `open`, `notify`, `system_control`, `spotlight`, and `ocr` (on-device macOS Vision).
+- 📄 **Documents** — `document` extracts text from PDF/Word/Excel; `create_document` generates real `.docx` / `.xlsx` / `.pptx`; `rag` indexes folders for "chat with your files" (embeddings + keyword fallback).
+- 🧑‍🤝‍🧑 **Multi-agent teams** — describe a goal and MacVis spins up a PM + worker agents that plan and execute until done, shown in a **3D scene**, with **human-in-the-loop** approvals.
+
+### Always-on & safe
+- 🎙️ **Voice in/out** — speak to MacVis (Whisper) and have replies read back (macOS `say` / ElevenLabs).
+- 🖼️ **Image & file attachments** — drop/paste images for vision, or drop any file to have the agent read it.
+- ⏰ **Scheduled tasks** — run prompts on a cadence; 🔗 **webhook triggers** — fire runs from Shortcuts/curl/cron.
+- ⌘⇧M **menu-bar quick-launch**, ⚡ **smart model routing** (cheap model for simple turns), and **prompt caching** + a live **token/cost meter**.
+- 🛡️ **Safety** — HITL approval + diff review for edits, a filesystem **sandbox** (protects `~/.ssh`, Keychains, `/etc`), an append-only **audit log** with secret redaction, and per-tool enable/disable.
+- 🧩 **Skills & one-click Packs** — installable skill playbooks plus 14 domain Packs (Web, Crypto, Scripting, Automation, Lead Gen, Data/AI, DevOps, Mobile, Content, Research, Finance, Support, E-commerce, Design→Code) that wire up the right skills + MCPs + keys in a click.
+
 ## Screenshots
 
 <div align="center">
@@ -203,12 +217,18 @@ The main process owns all I/O, AI calls, and tool execution. The renderer is pur
 | 5. Platform integrations: GitHub, Vercel, Supabase, Railway, Slack, Stripe, Notion, Linear, … | ✅ |
 | 7. Telegram remote control (single-user-gated bot) | ✅ |
 | 8a. DMG packaging (arm64 + x64) | ✅ |
+| 8c. Auto-updater (electron-updater) | ✅ |
+| 6. Skills loader + one-click Packs | ✅ |
+| 9. Tool-call approval mode + diff review (HITL) | ✅ |
+| 10. Full tool harness (read/write/edit/grep/glob, web_fetch, sub-agents) | ✅ |
+| 11. Computer use + vision, OCR, document read/create, RAG | ✅ |
+| 12. Multi-agent teams (3D) + HITL | ✅ |
+| 13. Voice in/out, attachments, scheduling, webhooks, menu-bar hotkey | ✅ |
+| 14. Prompt caching, cost meter, context compaction, model routing | ✅ |
+| 15. Sandbox + audit log + secret redaction + per-tool toggles | ✅ |
 | 8b. Code-signing + notarization | ⏳ [#2](https://github.com/asim266/macvis/issues/2) |
-| 8c. Auto-updater (electron-updater) | ⏳ [#3](https://github.com/asim266/macvis/issues/3) |
-| 6. Skills loader + Web Builder skill | ⏳ [#4](https://github.com/asim266/macvis/issues/4) |
-| 9. Tool-call approval mode (require OK before destructive actions) | ⏳ [#5](https://github.com/asim266/macvis/issues/5) |
 
-**8 of 11 milestones shipped.** The remaining 3 each have a tracking issue you can pick up.
+**Effectively the whole roadmap has shipped.** Code-signing/notarization is the last item (the release CI workflow is written and ready — see `docs/SIGNING.md`).
 
 ## Privacy
 
