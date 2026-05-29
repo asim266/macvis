@@ -62,6 +62,9 @@ export const defaultConfig = {
     // When on, file edits (write_file/edit_file/multi_edit) also pause and show a
     // diff for review before applying.
     approveEdits: false,
+    // Filesystem sandbox: block writes/deletes to protected paths (keys, system dirs).
+    sandbox: true,
+    protectedPaths: [] as string[],
   },
   ui: { theme: 'system', fontSize: 'medium', sidebarOpen: true, accent: 'green' as 'green' | 'red' | 'blue' | 'white', speakResponses: false },
   telegram: { enabled: false, runOnStartup: false },

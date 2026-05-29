@@ -1,8 +1,36 @@
-import { app, BrowserWindow, ipcMain, shell, session } from 'electron'
+import { app, BrowserWindow, ipcMain, shell, session, globalShortcut, Tray, Menu, nativeImage } from 'electron'
 import { join } from 'path'
 import { setupIPCHandlers } from './ipc'
 
 let mainWindow: BrowserWindow | null = null
+let tray: Tray | null = null
+
+function showWindow() {
+  if (!mainWindow) { createWindow(); return }
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  mainWindow.show()
+  mainWindow.focus()
+}
+
+function setupTrayAndHotkey() {
+  // Global quick-launch: ⌘⇧M brings MacVis to the front from anywhere.
+  try { globalShortcut.register('CommandOrControl+Shift+M', showWindow) }
+  catch (err) { console.error('globalShortcut error:', err) }
+
+  // Menu-bar tray icon.
+  try {
+    const img = nativeImage.createFromPath(join(__dirname, '../../assets/icon.png')).resize({ width: 18, height: 18 })
+    img.setTemplateImage(true)
+    tray = new Tray(img)
+    tray.setToolTip('MacVis')
+    tray.setContextMenu(Menu.buildFromTemplate([
+      { label: 'Open MacVis  (⌘⇧M)', click: showWindow },
+      { type: 'separator' },
+      { label: 'Quit MacVis', click: () => app.quit() },
+    ]))
+    tray.on('click', showWindow)
+  } catch (err) { console.error('Tray setup error:', err) }
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -44,6 +72,7 @@ app.whenReady().then(async () => {
 
   setupIPCHandlers()
   createWindow()
+  setupTrayAndHotkey()
 
   // Auto-updater (no-op in dev; uses GitHub Releases in packaged builds)
   import('./core/updater/AutoUpdater').then(({ setupAutoUpdater }) => {
@@ -84,6 +113,10 @@ app.whenReady().then(async () => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
+})
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll()
 })
 
 export function getMainWindow() {

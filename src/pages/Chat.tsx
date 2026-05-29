@@ -46,12 +46,14 @@ export function Chat() {
   const [noApiKey, setNoApiKey] = useState(false)
   const [todos, setTodos] = useState<{ content: string; status: string; activeForm?: string }[]>([])
   const [approval, setApproval] = useState<{ id: string; name: string; input: any; reason?: string; diff?: string } | null>(null)
+  const [usage, setUsage] = useState<{ inputTokens: number; outputTokens: number; cacheReadTokens?: number } | null>(null)
 
   // Live task list emitted by the todo_write tool
   useEffect(() => {
     const unsub = window.macvis?.agent?.onTodos?.((data: any) => setTodos(data.todos || []))
     const unsubApp = window.macvis?.agent?.onApproval?.((data: any) => setApproval(data))
-    return () => { unsub?.(); unsubApp?.() }
+    const unsubUsage = window.macvis?.agent?.onUsage?.((data: any) => setUsage(data))
+    return () => { unsub?.(); unsubApp?.(); unsubUsage?.() }
   }, [])
 
   const respondApproval = (ok: boolean) => {
@@ -173,9 +175,16 @@ export function Chat() {
       >
         {!isEmpty && (
           <span style={{
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
           }}>
             {activeSession?.title || 'New chat'}
+          </span>
+        )}
+        {usage && (usage.inputTokens + usage.outputTokens) > 0 && (
+          <span className="no-drag" title="Tokens this session (cached input shown in green)" style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--ink-4)', whiteSpace: 'nowrap' }}>
+            ↑{(usage.inputTokens / 1000).toFixed(1)}k
+            {usage.cacheReadTokens ? <span style={{ color: 'var(--ok)' }}> ({(usage.cacheReadTokens / 1000).toFixed(1)}k cached)</span> : null}
+            {' '}↓{(usage.outputTokens / 1000).toFixed(1)}k tok
           </span>
         )}
       </div>

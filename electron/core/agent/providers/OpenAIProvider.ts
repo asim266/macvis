@@ -124,8 +124,10 @@ export class OpenAIProvider implements ChatProvider {
       messages,
       tools,
       stream: true,
+      stream_options: { include_usage: true },
       max_tokens: opts.maxTokens || 8192,
     })
+    let usage: { inputTokens: number; outputTokens: number } | undefined
 
     // Accumulate streamed deltas into a final message
     let text = ''
@@ -134,6 +136,10 @@ export class OpenAIProvider implements ChatProvider {
     let finishReason: string | null = null
 
     for await (const chunk of stream) {
+      if ((chunk as any).usage) {
+        const u = (chunk as any).usage
+        usage = { inputTokens: u.prompt_tokens || 0, outputTokens: u.completion_tokens || 0 }
+      }
       const choice = chunk.choices?.[0]
       if (!choice) continue
       const delta = choice.delta
@@ -182,6 +188,7 @@ export class OpenAIProvider implements ChatProvider {
       text,
       stopReason: finishReason === 'tool_calls' ? 'tool_use' :
                   finishReason === 'length' ? 'max_tokens' : 'end_turn',
+      usage,
       raw: { finishReason },
     }
   }

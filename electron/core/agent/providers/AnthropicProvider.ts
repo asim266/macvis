@@ -31,15 +31,21 @@ export class AnthropicProvider implements ChatProvider {
       return { role: m.role, content: blocks as any }
     })
 
+    // Prompt caching: cache the (large) system prompt + tool definitions so the
+    // stable prefix isn't re-billed/re-processed every turn. cache_control on the
+    // last tool covers the whole tools array; system is sent as a cached block.
+    const toolDefs = opts.tools.map((t, i) => ({
+      name: t.name,
+      description: t.description,
+      input_schema: t.input_schema,
+      ...(i === opts.tools.length - 1 ? { cache_control: { type: 'ephemeral' as const } } : {}),
+    }))
+
     const stream = await client.messages.stream({
       model: opts.model,
       max_tokens: opts.maxTokens || 8192,
-      system: opts.system,
-      tools: opts.tools.map(t => ({
-        name: t.name,
-        description: t.description,
-        input_schema: t.input_schema,
-      })),
+      system: [{ type: 'text', text: opts.system, cache_control: { type: 'ephemeral' } }] as any,
+      tools: toolDefs as any,
       messages: messages as any,
     })
 
@@ -68,12 +74,19 @@ export class AnthropicProvider implements ChatProvider {
       }
     }
 
+    const u = final.usage as any
     return {
       content,
       toolUses,
       text,
       stopReason: final.stop_reason === 'tool_use' ? 'tool_use' :
                   final.stop_reason === 'max_tokens' ? 'max_tokens' : 'end_turn',
+      usage: u ? {
+        inputTokens: u.input_tokens || 0,
+        outputTokens: u.output_tokens || 0,
+        cacheReadTokens: u.cache_read_input_tokens || 0,
+        cacheWriteTokens: u.cache_creation_input_tokens || 0,
+      } : undefined,
       raw: final,
     }
   }
