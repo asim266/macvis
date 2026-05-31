@@ -52,7 +52,7 @@ export default function App() {
     <div style={{ display: 'flex', height: '100%', width: '100%', background: 'var(--surface-2)' }}>
       <Sidebar currentPage={page} onNavigate={setPage} />
       <main style={{ flex: 1, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
-        {page === 'chat' && <Chat />}
+        {page === 'chat' && <Chat onNavigate={setPage} />}
         {page === 'settings' && <Settings />}
         {page === 'mcps' && <MCPs />}
         {page === 'projects' && <Projects />}

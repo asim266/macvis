@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { X } from 'lucide-react'
+import { KeyRound, Settings as SettingsIcon, X } from 'lucide-react'
 import { useChatStore } from '../stores/chatStore'
 import { useConfigStore } from '../stores/configStore'
+import type { Page } from '../App'
 
 // expose chat store globally for agent done events
 declare const window: any
@@ -32,7 +33,56 @@ const QUICK_PROMPTS = [
   'Summarize the news from this week',
 ]
 
-export function Chat() {
+const MISSING_CHAT_PROVIDER_ERROR = /No API keys configured for any model in your fallback chain/i
+
+export function isMissingChatProviderError(error: unknown) {
+  return typeof error === 'string' && MISSING_CHAT_PROVIDER_ERROR.test(error)
+}
+
+function NoKeysCard({ onOpenSettings, onUseOllama, onDismiss }: { onOpenSettings: () => void; onUseOllama: () => void; onDismiss: () => void }) {
+  return (
+    <div
+      style={{
+        background: 'linear-gradient(135deg, var(--accent-soft), var(--surface-1))',
+        border: '1px solid var(--accent-line)',
+        borderRadius: 14,
+        padding: '16px 18px',
+        marginBottom: 20,
+        color: 'var(--ink-1)',
+        display: 'grid',
+        gridTemplateColumns: 'auto 1fr auto',
+        gap: 14,
+        alignItems: 'start',
+        boxShadow: '0 12px 40px oklch(0% 0 0 / 0.18)',
+      }}
+      className="fade-up"
+    >
+      <div style={{ width: 38, height: 38, borderRadius: 12, background: 'var(--accent)', color: 'var(--accent-text-on)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+        <KeyRound size={18} />
+      </div>
+      <div>
+        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 5 }}>No model is configured</div>
+        <p style={{ margin: 0, color: 'var(--ink-3)', fontSize: 12.5, lineHeight: 1.55, maxWidth: 560 }}>
+          MacVis needs at least one chat provider before it can answer. Add an API key for Anthropic, OpenAI, Gemini, OpenRouter, or Groq, or point it at a local Ollama server.
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+          <button onClick={onOpenSettings} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 11px', borderRadius: 8, border: '1px solid var(--accent)', background: 'var(--accent)', color: 'var(--accent-text-on)', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
+            <SettingsIcon size={14} />
+            Open Settings →
+          </button>
+          <button onClick={onUseOllama} style={{ padding: '8px 11px', borderRadius: 8, border: '1px solid var(--line-2)', background: 'var(--surface-3)', color: 'var(--ink-2)', fontSize: 12.5, cursor: 'pointer' }}>
+            Use Ollama (no key needed)
+          </button>
+        </div>
+      </div>
+      <button onClick={onDismiss} aria-label="Dismiss no model configured message" style={{ background: 'none', border: 'none', color: 'var(--ink-4)', cursor: 'pointer', display: 'flex', padding: 2 }}>
+        <X size={15} />
+      </button>
+    </div>
+  )
+}
+
+export function Chat({ onNavigate }: { onNavigate?: (page: Page) => void }) {
   const {
     sessions, activeSessionId, isStreaming, streamingMessageId,
     createSession,
@@ -40,7 +90,7 @@ export function Chat() {
     setStreaming, setStreamingMessageId,
   } = useChatStore()
 
-  const { load, loaded } = useConfigStore()
+  const { load, loaded, set: setConfig } = useConfigStore()
   const sessionsLoaded = useChatStore(s => s.sessionsLoaded)
   const bottomRef = useRef<HTMLDivElement>(null)
   const [noApiKey, setNoApiKey] = useState(false)
@@ -138,6 +188,14 @@ export function Chat() {
 
     unsubs.push(window.macvis.agent.onError((data: any) => {
       if (data.sessionId === activeSessionId) {
+        if (isMissingChatProviderError(data.error)) {
+          useChatStore.getState().resetMessageContent(activeSessionId, assistantId)
+          setNoApiKey(true)
+          setStreaming(false)
+          setStreamingMessageId(null)
+          unsubs.forEach(u => u())
+          return
+        }
         appendStream(activeSessionId, assistantId, `\n\n**Error:** ${data.error}`)
         setStreaming(false)
         setStreamingMessageId(null)
@@ -151,6 +209,14 @@ export function Chat() {
   const handleStop = useCallback(() => {
     if (activeSessionId) window.macvis.agent.stop(activeSessionId)
   }, [activeSessionId])
+
+  const openChatSettings = useCallback(() => onNavigate?.('settings'), [onNavigate])
+
+  const useOllama = useCallback(async () => {
+    await setConfig('apiKeys.ollama', 'http://localhost:11434')
+    setNoApiKey(false)
+    onNavigate?.('settings')
+  }, [onNavigate, setConfig])
 
   const isEmpty = !activeSession?.messages.length
 
@@ -205,26 +271,7 @@ export function Chat() {
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, position: 'relative', zIndex: 1 }}>
         <div style={{ maxWidth: 760, margin: '0 auto', padding: '24px 32px', minHeight: '100%' }}>
           {noApiKey && (
-            <div
-              style={{
-                background: 'var(--accent-soft)',
-                border: '1px solid var(--accent-line)',
-                borderRadius: 10,
-                padding: '12px 16px',
-                marginBottom: 20,
-                fontSize: 13,
-                color: 'var(--accent-bright)',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              }}
-              className="fade-up"
-            >
-              <span>
-                No chat-model key configured. Open <strong style={{ fontWeight: 600 }}>Settings → Chat API Keys</strong> and add at least one (Anthropic, OpenAI, Gemini, OpenRouter, Groq, or Ollama).
-              </span>
-              <button onClick={() => setNoApiKey(false)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', display: 'flex' }}>
-                <X size={14} />
-              </button>
-            </div>
+            <NoKeysCard onOpenSettings={openChatSettings} onUseOllama={useOllama} onDismiss={() => setNoApiKey(false)} />
           )}
 
           {isEmpty ? (

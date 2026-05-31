@@ -4,6 +4,7 @@ import { parseSkill } from '../electron/core/skills/SkillParser'
 import { checkProtectedPath, pathFromToolInput } from '../electron/core/security/sandbox'
 import { redactSecrets } from '../electron/core/security/redact'
 import { classifyComplexity } from '../electron/core/agent/routing'
+import { isMissingChatProviderError } from '../src/pages/Chat'
 
 describe('unifiedDiff', () => {
   it('reports no changes for identical text', () => {
@@ -81,5 +82,15 @@ describe('classifyComplexity', () => {
   })
   it('treats long prompts as complex', () => {
     expect(classifyComplexity('a '.repeat(200))).toBe('complex')
+  })
+})
+
+describe('isMissingChatProviderError', () => {
+  it('detects the no-provider fallback-chain error from the agent', () => {
+    expect(isMissingChatProviderError('No API keys configured for any model in your fallback chain. Go to Settings → Chat API Keys.')).toBe(true)
+  })
+
+  it('ignores unrelated provider errors', () => {
+    expect(isMissingChatProviderError('OpenAI returned a 429 rate limit error')).toBe(false)
   })
 })
