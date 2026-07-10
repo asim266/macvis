@@ -1,16 +1,35 @@
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
-import { redactSecrets } from '../security/redact'
+import { redactSecrets, redactValues } from '../security/redact'
 
 const LOG_DIR = path.join(os.homedir(), '.macvis', 'logs')
 const LOG_FILE = path.join(LOG_DIR, 'audit.log')
+
+// Collect every configured secret value so we can mask it by exact match,
+// independent of key format. Best-effort; never throws.
+function configuredSecrets(): string[] {
+  try {
+    const { ConfigStore } = require('../config/ConfigStore')
+    const all = ConfigStore.getInstance().getAll() || {}
+    const out: string[] = []
+    const walk = (o: any) => {
+      if (!o || typeof o !== 'object') return
+      for (const v of Object.values(o)) {
+        if (typeof v === 'string' && v.length >= 12) out.push(v)
+        else if (v && typeof v === 'object') walk(v)
+      }
+    }
+    walk(all.apiKeys); walk(all.mcps); walk(all.webhooks); walk(all.telegram)
+    return out
+  } catch { return [] }
+}
 
 function summarize(input: any): string {
   try {
     const s = typeof input === 'string' ? input : JSON.stringify(input)
     const clipped = s.length > 300 ? s.slice(0, 300) + '…' : s
-    return redactSecrets(clipped)
+    return redactValues(redactSecrets(clipped), configuredSecrets())
   } catch { return '' }
 }
 

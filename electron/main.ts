@@ -48,7 +48,7 @@ function createWindow() {
       preload: join(__dirname, '../preload/preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      sandbox: true,
     },
   })
 
@@ -60,15 +60,47 @@ function createWindow() {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 
+  // Only open http(s) links externally; never let the renderer navigate itself
+  // to another origin (that origin would inherit the window.macvis bridge).
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url)
+    if (/^https?:\/\//i.test(url)) shell.openExternal(url)
     return { action: 'deny' }
   })
+
+  const isAppUrl = (url: string) => devUrl ? url.startsWith(devUrl) : url.startsWith('file://')
+  const lockNav = (e: Electron.Event, url: string) => { if (!isAppUrl(url)) e.preventDefault() }
+  mainWindow.webContents.on('will-navigate', lockNav)
+  mainWindow.webContents.on('will-redirect', lockNav)
 }
 
 app.whenReady().then(async () => {
-  // Local-first desktop app: grant renderer permission requests (mic for voice input, etc.).
-  session.defaultSession.setPermissionRequestHandler((_wc, _permission, cb) => cb(true))
+  // Local-first desktop app: grant only the permissions the app actually needs
+  // (mic for voice input). Deny everything else instead of blanket-approving.
+  const ALLOWED_PERMISSIONS = new Set(['media', 'audioCapture', 'clipboard-read', 'clipboard-sanitized-write'])
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => cb(ALLOWED_PERMISSIONS.has(permission)))
+
+  // Content-Security-Policy for the packaged app (file:// load). The renderer
+  // talks to the main process only over IPC — no direct network — so lock
+  // connect-src to self. Skipped in dev so Vite HMR keeps working.
+  const devUrl = process.env.ELECTRON_RENDERER_URL || process.env.VITE_DEV_SERVER_URL
+  if (!devUrl) {
+    const CSP = [
+      "default-src 'self'",
+      "script-src 'self'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob:",
+      "font-src 'self' data:",
+      "media-src 'self' blob: data:",
+      "connect-src 'self'",
+      "object-src 'none'",
+      "base-uri 'none'",
+      "frame-src 'none'",
+      "worker-src 'self' blob:",
+    ].join('; ')
+    session.defaultSession.webRequest.onHeadersReceived((details, cb) => {
+      cb({ responseHeaders: { ...details.responseHeaders, 'Content-Security-Policy': [CSP] } })
+    })
+  }
 
   setupIPCHandlers()
   createWindow()

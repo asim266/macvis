@@ -60,7 +60,7 @@ Built for developers who want a real agent to drive their environment, without s
 - 🖼️ **Image & file attachments** — drop/paste images for vision, or drop any file to have the agent read it.
 - ⏰ **Scheduled tasks** — run prompts on a cadence; 🔗 **webhook triggers** — fire runs from Shortcuts/curl/cron.
 - ⌘⇧M **menu-bar quick-launch**, ⚡ **smart model routing** (cheap model for simple turns), and **prompt caching** + a live **token/cost meter**.
-- 🛡️ **Safety** — HITL approval + diff review for edits, a filesystem **sandbox** (protects `~/.ssh`, Keychains, `/etc`), an append-only **audit log** with secret redaction, and per-tool enable/disable.
+- 🛡️ **Safety** — a HITL **approval gate** for shell/AppleScript/destructive/outward actions — **enforced on sub-agents and teams too**, so delegation can't bypass it — plus diff review for edits. A filesystem **sandbox** guards protected paths on both **writes _and_ reads** (`~/.ssh`, `~/.aws`, Keychains, `/etc`, `~/Library/LaunchAgents`, shell rc files, and MacVis's own key store), so the agent can't exfiltrate secrets or install a persistence backdoor. A hardened Electron shell (context isolation, renderer OS sandbox, CSP, navigation lock), `web_fetch` **SSRF protection** (blocks localhost/LAN/metadata), an append-only **audit log** with format-aware + value-based secret redaction, and per-tool enable/disable.
 - 🧩 **Skills & one-click Packs** — installable skill playbooks plus 14 domain Packs (Web, Crypto, Scripting, Automation, Lead Gen, Data/AI, DevOps, Mobile, Content, Research, Finance, Support, E-commerce, Design→Code) that wire up the right skills + MCPs + keys in a click.
 
 ## Screenshots
@@ -305,7 +305,7 @@ The agent has **full access to your Mac** — bash, filesystem, network, and any
 - **The author(s) and contributors of MacVis are not liable** for any loss, damage, data corruption, unintended deployments, accidental expenses, deleted files, leaked credentials, or any other consequence — direct, indirect, incidental, or otherwise — arising from your use of this software.
 - **You bring your own keys.** Any charges you incur on Anthropic, OpenAI, OpenRouter, Vercel, Stripe, etc. are entirely your responsibility.
 - **MCP servers run as child processes** with your environment. Only connect MCPs you trust.
-- **No security audit** has been performed. Do not use MacVis for handling regulated data (PHI, PII, financial, etc.) without your own review.
+- **A security review + hardening pass** has been done on the agent safety model (approval gate, sandbox, secret handling, Electron process model), but MacVis has **not** had a formal third-party security audit. Do not use it for regulated data (PHI, PII, financial, etc.) without your own review.
 
 If you don't accept those terms, **don't run the software.** By installing or using MacVis, you accept full responsibility for its behavior on your machine.
 

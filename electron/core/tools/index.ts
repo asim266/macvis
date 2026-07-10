@@ -28,7 +28,10 @@ import { ConfigStore } from '../config/ConfigStore'
 import { MCPManager } from '../mcp/MCPManager'
 import { SubagentTool } from './SubagentTool'
 import { OcrTool } from './OcrTool'
-import { checkProtectedPath, FILE_MUTATING_TOOLS, pathFromToolInput } from '../security/sandbox'
+import {
+  checkProtectedPath, FILE_MUTATING_TOOLS, pathFromToolInput,
+  checkProtectedReadPath, FILE_READING_TOOLS, readPathFromToolInput,
+} from '../security/sandbox'
 
 const TOOLS = [
   // Execution
@@ -88,6 +91,17 @@ export async function executeTool(name: string, input: any, config: ConfigStore)
     if (p) {
       const extra = (config.get('tools.protectedPaths') as string[]) || []
       const reason = checkProtectedPath(p, extra)
+      if (reason) return `Blocked by sandbox: ${reason}`
+    }
+  }
+
+  // Read sandbox: block reads of credential/secret locations (SSH/cloud keys,
+  // the app's own config store) so secrets can't be exfiltrated by the LLM.
+  if (config.get('tools.sandbox') !== false && FILE_READING_TOOLS.has(name)) {
+    const rp = readPathFromToolInput(name, input)
+    if (rp) {
+      const extra = (config.get('tools.protectedReadPaths') as string[]) || []
+      const reason = checkProtectedReadPath(rp, extra)
       if (reason) return `Blocked by sandbox: ${reason}`
     }
   }

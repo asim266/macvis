@@ -15,15 +15,8 @@ export function setupTelegramHandlers() {
     return { running: isTelegramBotRunning() }
   })
 
-  ipcMain.handle('shell:run', async (_, { command }) => {
-    const { exec } = await import('child_process')
-    const { promisify } = await import('util')
-    const execAsync = promisify(exec)
-    try {
-      const { stdout, stderr } = await execAsync(command)
-      return { stdout, stderr }
-    } catch (err: any) {
-      return { error: err.message }
-    }
-  })
+  // NOTE: a raw `shell:run` IPC handler was removed here. It executed arbitrary
+  // renderer-supplied commands with no approval/sandbox/audit and was unused by
+  // any renderer code — a latent renderer→RCE primitive. The agent's gated
+  // BashTool is the sanctioned shell path.
 }
