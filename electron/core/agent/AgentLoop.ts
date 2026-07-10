@@ -61,7 +61,7 @@ import { getProvider, parseProviderModel, type ProviderName } from './providers'
 import type { CommonMessage, ContentBlock, FinalMessage } from './providers/types'
 import os from 'os'
 
-const DEFAULT_CHAIN_FALLBACK = 'anthropic:claude-opus-4-5'
+const DEFAULT_CHAIN_FALLBACK = 'anthropic:claude-opus-4-8'
 
 export const PROVIDER_KEY_PATH: Record<ProviderName, string> = {
   anthropic: 'apiKeys.anthropic',
@@ -228,7 +228,7 @@ export function resolveChain(config: ConfigStore): Array<{ provider: ProviderNam
   // Fallback: use the legacy models.default + models.provider
   if (resolved.length === 0) {
     const provider = (config.get('models.provider') as ProviderName) || 'anthropic'
-    const model = (config.get('models.default') as string) || 'claude-opus-4-5'
+    const model = (config.get('models.default') as string) || 'claude-opus-4-8'
     const parsed = parseProviderModel(`${provider}:${model}`) || parseProviderModel(DEFAULT_CHAIN_FALLBACK)!
     resolved.push(parsed)
   }
@@ -445,6 +445,7 @@ export class AgentLoop {
               system: systemPrompt,
               messages: apiMessages,
               tools,
+              effort: config.get('models.effort') as string,
             }, {
               onText: (t) => {
                 this.emit('agent:stream', { type: 'text', content: t, sessionId })

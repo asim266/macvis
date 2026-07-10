@@ -102,6 +102,12 @@ app.whenReady().then(async () => {
     })
   }
 
+  // Encrypt any plaintext API keys already on disk (safeStorage / Keychain-backed).
+  // Safe to run every boot; a no-op once everything is encrypted.
+  import('./core/config/ConfigStore').then(({ ConfigStore }) => {
+    try { ConfigStore.getInstance().migrateSecrets() } catch (err) { console.error('Secret migration error:', err) }
+  })
+
   setupIPCHandlers()
   createWindow()
   setupTrayAndHotkey()

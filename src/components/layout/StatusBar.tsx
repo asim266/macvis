@@ -1,7 +1,7 @@
 import { useConfigStore } from '../../stores/configStore'
 
 export function StatusBar() {
-  const model = useConfigStore(s => s.config?.models?.default || 'claude-opus-4-5')
+  const model = useConfigStore(s => s.config?.models?.default || 'claude-opus-4-8')
 
   return (
     <div

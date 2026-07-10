@@ -1,0 +1,42 @@
+name: CI
+
+# Merge gate: type-check, unit tests, a bundle build, and a dependency audit on
+# every PR and every push to main. Keeps regressions out before they reach a tag.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Type-check
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Bundle (build check)
+        run: pnpm exec electron-vite build --config electron-vite.config.ts
+
+      # Advisory only — surfaces known-vulnerable deps without blocking the merge
+      # (some transitive advisories, e.g. in xlsx, have no fixed upgrade path yet).
+      - name: Dependency audit (high+)
+        run: pnpm audit --audit-level high || true

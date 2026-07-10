@@ -52,6 +52,9 @@ export interface StreamOptions {
   tools: CommonTool[]
   maxTokens?: number
   signal?: AbortSignal
+  /** Reasoning/agentic depth (low|medium|high|xhigh|max). Providers apply it only
+   *  to models that support it; ignored otherwise. */
+  effort?: string
 }
 
 export interface ToolUseResult {
