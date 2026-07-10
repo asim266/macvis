@@ -1,5 +1,7 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
+/* Local-first: no external font fetch. Renders in the native macOS system stack
+ * (SF Pro / SF Mono) declared in --font-display / --font-mono below. To ship the
+ * Geist typeface, self-host it (e.g. @fontsource/geist-*) rather than the CDN. */
 
 :root {
   /* Theme hue + chroma — overridden by [data-accent=...] below.
