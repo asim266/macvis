@@ -862,6 +862,23 @@ export function Settings() {
               )}
 
               <Section
+                title="Reasoning Effort"
+                hint="How hard supported models think per turn (Opus 4.x, Sonnet 5, Fable 5). Higher = more thorough reasoning and tool use at higher token cost. Ignored by models that don't support it, e.g. Haiku."
+              >
+                <select
+                  value={config.models?.effort || 'high'}
+                  onChange={e => set('models.effort', e.target.value)}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid var(--line-2)', background: 'var(--surface-3)', color: 'var(--ink-1)', fontSize: 13, fontFamily: 'var(--font-mono)' }}
+                >
+                  <option value="low">Low — fastest, cheapest</option>
+                  <option value="medium">Medium — balanced</option>
+                  <option value="high">High — recommended default</option>
+                  <option value="xhigh">X-High — best for coding / agentic</option>
+                  <option value="max">Max — most thorough, highest cost</option>
+                </select>
+              </Section>
+
+              <Section
                 title="Providers"
                 hint="Add chat-model API keys. Click ‘Test’ to verify and load available models. Then pick a model below to use this provider in the fallback chain."
               >

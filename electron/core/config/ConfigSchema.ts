@@ -27,11 +27,15 @@ export const defaultConfig = {
   // Cached provider validation status + available models
   providers: {} as Record<string, { valid: boolean; checkedAt: number; models: string[]; error?: string }>,
   models: {
-    default: 'claude-opus-4-5',
+    default: 'claude-opus-4-8',
     provider: 'anthropic',
-    fallback: 'gpt-4o',
-    fallbackProvider: 'openai',
+    fallback: 'claude-sonnet-5',
+    fallbackProvider: 'anthropic',
     imageGen: '',
+    // Reasoning/agentic depth sent to models that support it (output_config.effort):
+    // low | medium | high | xhigh | max. Ignored for models that don't accept it
+    // (e.g. Haiku 4.5). 'high' is a good default; 'xhigh' is best for heavy coding/agentic.
+    effort: 'high',
     // Per-provider selected chat model — populated after user validates a key
     // and picks one from the inline dropdown.
     selections: {} as Record<string, string>,

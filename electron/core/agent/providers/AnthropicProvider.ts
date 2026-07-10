@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { ChatProvider, StreamOptions, StreamHandlers, FinalMessage, ContentBlock, ToolUseResult } from './types'
+import { modelSupportsEffort, normalizeEffort } from '../effort'
 
 export class AnthropicProvider implements ChatProvider {
   readonly name = 'anthropic'
@@ -41,13 +42,22 @@ export class AnthropicProvider implements ChatProvider {
       ...(i === opts.tools.length - 1 ? { cache_control: { type: 'ephemeral' as const } } : {}),
     }))
 
-    const stream = await client.messages.stream({
+    const params: any = {
       model: opts.model,
       max_tokens: opts.maxTokens || 8192,
-      system: [{ type: 'text', text: opts.system, cache_control: { type: 'ephemeral' } }] as any,
-      tools: toolDefs as any,
-      messages: messages as any,
-    })
+      system: [{ type: 'text', text: opts.system, cache_control: { type: 'ephemeral' } }],
+      tools: toolDefs,
+      messages,
+    }
+
+    // Effort (output_config.effort) controls reasoning/agentic depth and token spend.
+    // Only send it to models that accept it — Haiku 4.5 / Sonnet 4.5 / older 400 on it,
+    // and Haiku is commonly the fast-route model, so gate strictly.
+    if (opts.effort && modelSupportsEffort(opts.model)) {
+      params.output_config = { effort: normalizeEffort(opts.effort) }
+    }
+
+    const stream = await client.messages.stream(params)
 
     for await (const chunk of stream) {
       if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {

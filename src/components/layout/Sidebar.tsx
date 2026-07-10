@@ -20,7 +20,7 @@ const NAV_ITEMS: { id: Page; icon: React.ReactNode; label: string }[] = [
 
 export function Sidebar({ currentPage, onNavigate }: Props) {
   const { sessions, activeSessionId, createSession, setActiveSession, deleteSession } = useChatStore()
-  const model = useConfigStore(s => s.config?.models?.default || 'claude-opus-4-5')
+  const model = useConfigStore(s => s.config?.models?.default || 'claude-opus-4-8')
   const [hoveredSession, setHoveredSession] = useState<string | null>(null)
 
   const goToChat = (sessionId: string) => {
