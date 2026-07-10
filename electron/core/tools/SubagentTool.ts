@@ -19,6 +19,7 @@ export const SubagentTool = {
 
   async execute({ prompt, role }: any, config: any) {
     const { runAgent } = await import('../agents/AgentRunner')
+    const { agentLoop } = await import('../agent/AgentLoop')
     const system =
       `You are an autonomous ${role || 'general-purpose'} sub-agent inside MacVis. You have the full native + MCP toolset. ` +
       `Complete the task end to end using tools, then return a concise summary of what you did and the key result/output. ` +
@@ -29,6 +30,9 @@ export const SubagentTool = {
         message: prompt,
         config,
         maxSteps: 18,
+        // Dangerous sub-agent actions surface the SAME HITL approval dialog as
+        // the main loop (keyed by tool-use id). Unattended runs auto-deny.
+        approve: (tu) => agentLoop.requestExternalApproval(tu, { reason: tu.reason }),
         events: {
           onTool: (name) => getMainWindow()?.webContents.send('agent:subagent', { name }),
         },

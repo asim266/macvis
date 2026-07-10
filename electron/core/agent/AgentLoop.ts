@@ -5,6 +5,7 @@ import { executeTool } from '../tools'
 import { isImageToolResult } from '../tools/types'
 import { AuditLog } from '../audit/AuditLog'
 import { classifyComplexity } from './routing'
+import { isDangerousTool } from './toolGate'
 
 const HISTORY_CHAR_BUDGET = 140_000   // ~ keep well under context limits
 const KEEP_RECENT_MESSAGES = 12
@@ -235,21 +236,12 @@ export function resolveChain(config: ConfigStore): Array<{ provider: ProviderNam
   return resolved
 }
 
-// Patterns that warrant a human-in-the-loop confirmation before running.
-const DANGEROUS_BASH = [
-  /\brm\s+-[rf]/, /\brm\s+.*-[rf]/, /\bsudo\b/, /\bmkfs/, /\bdd\s+if=/, /\bshutdown\b/, /\breboot\b/,
-  /\bkillall\b/, /\bchmod\s+-R\s+777/, /\b>\s*\/dev\/sd/, /\bgit\s+push\b.*--force/, /\bgit\s+push\s+-f\b/,
-  /\bnpm\s+publish\b/, /\bcurl\b[^|]*\|\s*(sudo\s+)?(ba)?sh\b/, /\bdiskutil\s+(erase|reformat)/, /\bdefaults\s+delete\b/,
-]
-function isDangerousTool(name: string, input: any): { danger: boolean; reason?: string } {
-  if (name === 'bash') {
-    const cmd = String(input?.command || '')
-    for (const re of DANGEROUS_BASH) if (re.test(cmd)) return { danger: true, reason: `Potentially destructive shell command` }
-  }
-  if (name === 'filesystem' && input?.operation === 'delete') return { danger: true, reason: 'Deletes files/directories' }
-  if (name === 'mail' && input?.operation === 'send') return { danger: true, reason: 'Sends an email on your behalf' }
-  return { danger: false }
-}
+// Danger classification lives in ./toolGate (shared with the headless
+// AgentRunner so the gate can't be bypassed via sub-agent delegation).
+
+// Hard ceiling on tool-use turns per run so a runaway model (or a tool-call
+// loop) can't spin forever, burning cost and blocking the session.
+const MAX_ITERATIONS = 100
 
 export class AgentLoop {
   private running = new Map<string, boolean>()
@@ -259,6 +251,16 @@ export class AgentLoop {
   approve(id: string, ok: boolean) {
     const r = this.pendingApprovals.get(id)
     if (r) { this.pendingApprovals.delete(id); r(ok) }
+  }
+
+  /**
+   * Approval entry point for headless sub-agents / teams. Surfaces the SAME
+   * `agent:approval` HITL event to the UI (keyed by tool-use id) so a delegated
+   * dangerous action is gated exactly like a main-loop one. If no UI is
+   * attending, the underlying 5-minute timeout auto-denies (fail-safe).
+   */
+  requestExternalApproval(toolUse: { id: string; name: string; input: any }, extra?: { reason?: string; diff?: string }): Promise<boolean> {
+    return this.requestApproval(toolUse.id?.startsWith('sub_') ? 'subagent' : 'subagent', toolUse, extra)
   }
 
   private requestApproval(sessionId: string, toolUse: any, extra?: { reason?: string; diff?: string }): Promise<boolean> {
@@ -401,8 +403,13 @@ export class AgentLoop {
     let totalUsage = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 }
     let assistantMsg: PersistedMessage | null = null
 
+    let iterations = 0
     try {
       while (this.running.get(sessionId)) {
+        if (++iterations > MAX_ITERATIONS) {
+          this.emit('agent:error', { error: `Stopped: exceeded ${MAX_ITERATIONS} tool-use turns in a single run (possible loop).`, sessionId })
+          break
+        }
         assistantMsg = {
           id: `msg_${Date.now()}_a`,
           role: 'assistant',

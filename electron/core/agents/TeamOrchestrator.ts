@@ -9,6 +9,11 @@ import { getRole, suggestRoles, ROLES } from './AgentRoles'
 const TEAMS_DIR = path.join(os.homedir(), '.macvis', 'teams')
 const PROJECTS_DIR = path.join(os.homedir(), '.macvis', 'workspace', 'projects')
 
+// Surface a team worker's dangerous tool calls through the main HITL approval
+// dialog (same gate as the interactive agent). Unattended → auto-deny.
+const teamApprove = (tu: { id: string; name: string; input: any; reason?: string }) =>
+  import('../agent/AgentLoop').then(({ agentLoop }) => agentLoop.requestExternalApproval(tu, { reason: tu.reason }))
+
 export type AgentStatus = 'idle' | 'thinking' | 'working' | 'reviewing' | 'waiting' | 'done' | 'error'
 export type TeamStatus = 'planning' | 'awaiting-approval' | 'running' | 'paused' | 'done' | 'stopped' | 'error'
 export type TaskStatus = 'pending' | 'in_progress' | 'done' | 'blocked'
@@ -181,7 +186,7 @@ export class TeamOrchestrator {
         (planFeedback ? `The user gave this feedback on your previous plan — incorporate it:\n${planFeedback}\n\n` : '') +
         `Break the goal into 3–8 concrete tasks. Reply with ONLY a JSON array, each item ` +
         `{"title": "...", "role": "<one of: ${workerRoles.map(r => r.role).join(', ')}>"}. No prose.`
-      const res = await runAgent({ system: getRole(pm.role).system, message: planPrompt, config, maxSteps: 4, signal: () => this.isStopped(team.id), events: this.agentEvents(team, pm) })
+      const res = await runAgent({ system: getRole(pm.role).system, message: planPrompt, config, maxSteps: 4, signal: () => this.isStopped(team.id), events: this.agentEvents(team, pm), approve: teamApprove })
       const parsed = extractJsonArray(res.text)
       tasks = parsed.map((t: any) => ({
         title: String(t.title || t.task || '').slice(0, 200),
@@ -230,7 +235,7 @@ export class TeamOrchestrator {
           `Your task: ${task.title}${context}\n\nComplete it fully, create/modify the necessary files, and verify it works. ` +
           `End with a one-paragraph summary of what you did.`
         try {
-          const res = await runAgent({ system: getRole(agent.role).system, message, config, maxSteps: 24, signal: () => this.isStopped(team.id), events: this.agentEvents(team, agent) })
+          const res = await runAgent({ system: getRole(agent.role).system, message, config, maxSteps: 24, signal: () => this.isStopped(team.id), events: this.agentEvents(team, agent), approve: teamApprove })
           task.status = 'done'; task.result = res.text.slice(0, 1500)
           this.setAgent(team, agent.id, { status: 'done', currentTask: undefined, lastMessage: res.text.slice(-200) })
           this.log(team, 'result', `✓ ${task.title}`, agent.id)
@@ -250,7 +255,7 @@ export class TeamOrchestrator {
         `Goal: ${team.goal}\nProject dir: ${team.projectDir}\n\nProgress so far:\n${summary}\n\n` +
         `Is the goal fully achieved and working? If YES, reply with exactly: DONE. ` +
         `If NO, reply with ONLY a JSON array of additional tasks ({"title","role"}) needed to finish.`
-      const review = await runAgent({ system: getRole(pm.role).system, message: reviewPrompt, config, maxSteps: 6, signal: () => this.isStopped(team.id), events: this.agentEvents(team, pm) })
+      const review = await runAgent({ system: getRole(pm.role).system, message: reviewPrompt, config, maxSteps: 6, signal: () => this.isStopped(team.id), events: this.agentEvents(team, pm), approve: teamApprove })
       this.setAgent(team, pm.id, { status: 'waiting', currentTask: undefined })
 
       if (/\bDONE\b/.test(review.text) && extractJsonArray(review.text).length === 0) {
