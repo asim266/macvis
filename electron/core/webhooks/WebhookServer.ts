@@ -1,6 +1,11 @@
 import http from 'http'
 import { ConfigStore } from '../config/ConfigStore'
 import { getMainWindow } from '../../main'
+import { safeEqual, createRateLimiter } from '../security/http'
+
+// Cap inbound trigger attempts so a local process can't brute-force the token
+// or spam agent runs. Localhost-only, so the key is effectively a single client.
+const isLimited = createRateLimiter(30, 60_000)
 
 // A tiny localhost-only HTTP endpoint that fires an agent run when it receives
 // an authorized POST. Lets external automations (Shortcuts, curl, cron, other
@@ -28,7 +33,9 @@ export const WebhookServer = {
     server = http.createServer(async (req, res) => {
       const token = req.headers['x-macvis-token']
       if (req.method !== 'POST' || (req.url || '') !== '/run') { res.writeHead(404); res.end('not found'); return }
-      if (token !== secret) { res.writeHead(401); res.end('unauthorized'); return }
+      if (isLimited(req.socket.remoteAddress || 'local')) { res.writeHead(429); res.end('too many requests'); return }
+      // Constant-time compare — `!==` leaks the secret byte-by-byte via timing.
+      if (!safeEqual(token, secret)) { res.writeHead(401); res.end('unauthorized'); return }
       try {
         const body = await readBody(req)
         const json = body ? JSON.parse(body) : {}

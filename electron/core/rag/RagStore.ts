@@ -4,6 +4,7 @@ import path from 'path'
 import os from 'os'
 import { ConfigStore } from '../config/ConfigStore'
 import { extractText, isTextLike } from '../documents/extract'
+import { atomicWriteFileSync } from '../util/atomicWrite'
 
 const RAG_DIR = path.join(os.homedir(), '.macvis', 'rag')
 
@@ -115,7 +116,7 @@ export const RagStore = {
         } catch { embedded = false }
       }
       const ix: RagIndex = { name, files, chunks, embedded, createdAt: Date.now() }
-      fs.writeFileSync(indexPath(name), JSON.stringify(ix))
+      atomicWriteFileSync(indexPath(name), JSON.stringify(ix))
       return { ok: true, files: files.length, chunks: chunks.length, embedded }
     } catch (err: any) {
       return { ok: false, files: 0, chunks: 0, embedded: false, error: err.message || String(err) }

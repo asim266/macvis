@@ -33,11 +33,25 @@ function summarize(input: any): string {
   } catch { return '' }
 }
 
+// Cap the audit log so it can't grow without bound on a long-running install.
+// At the limit the current file becomes audit.log.1 (replacing any previous
+// rotation) and a fresh log starts — one generation of history is retained.
+const MAX_LOG_BYTES = 5 * 1024 * 1024
+
+function rotateIfNeeded() {
+  try {
+    if (fs.statSync(LOG_FILE).size > MAX_LOG_BYTES) {
+      fs.renameSync(LOG_FILE, `${LOG_FILE}.1`)
+    }
+  } catch { /* missing file (nothing to rotate) or rotation failed — keep logging */ }
+}
+
 export const AuditLog = {
   /** Append a single tool-invocation record (JSON line). Never throws. */
   record(entry: { sessionId: string; tool: string; input?: any; ok: boolean; ms?: number; denied?: boolean }) {
     try {
       fs.mkdirSync(LOG_DIR, { recursive: true })
+      rotateIfNeeded()
       const line = JSON.stringify({
         ts: new Date().toISOString(),
         sessionId: entry.sessionId,
