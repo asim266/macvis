@@ -162,6 +162,56 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
 
+/**
+ * Release every long-lived resource before the process exits: the webhook HTTP
+ * server, the Telegram long-poll, spawned MCP child processes, live terminal
+ * shells, and any debounced session write still sitting in memory. Bounded by a
+ * timeout so a wedged subsystem can never block quitting.
+ */
+async function shutdown(): Promise<void> {
+  const tasks: Promise<unknown>[] = []
+
+  try {
+    const { WebhookServer } = await import('./core/webhooks/WebhookServer')
+    WebhookServer.stop()
+  } catch (err) { console.error('Webhook shutdown error:', err) }
+
+  try {
+    const { stopTelegramBot } = await import('./core/telegram/TelegramBot')
+    tasks.push(stopTelegramBot())
+  } catch (err) { console.error('Telegram shutdown error:', err) }
+
+  try {
+    const { MCPManager } = await import('./core/mcp/MCPManager')
+    tasks.push(MCPManager.getInstance().shutdownAll())
+  } catch (err) { console.error('MCP shutdown error:', err) }
+
+  try {
+    const { TerminalManager } = await import('./core/terminal/TerminalSession')
+    TerminalManager.killAll()
+  } catch (err) { console.error('Terminal shutdown error:', err) }
+
+  try {
+    const { SessionStore } = await import('./core/sessions/SessionStore')
+    tasks.push(SessionStore.flushAll())
+  } catch (err) { console.error('Session flush error:', err) }
+
+  await Promise.race([
+    Promise.allSettled(tasks),
+    new Promise(resolve => setTimeout(resolve, 3000)),
+  ])
+}
+
+let isShuttingDown = false
+app.on('before-quit', (e) => {
+  if (isShuttingDown) return
+  e.preventDefault()
+  isShuttingDown = true
+  shutdown()
+    .catch(err => console.error('Shutdown error:', err))
+    .finally(() => app.exit(0))
+})
+
 app.on('will-quit', () => {
   globalShortcut.unregisterAll()
 })

@@ -5,6 +5,7 @@ import { getMainWindow } from '../../main'
 import { ConfigStore } from '../config/ConfigStore'
 import { runAgent } from './AgentRunner'
 import { getRole, suggestRoles, ROLES } from './AgentRoles'
+import { atomicWriteFileSync } from '../util/atomicWrite'
 
 const TEAMS_DIR = path.join(os.homedir(), '.macvis', 'teams')
 const PROJECTS_DIR = path.join(os.homedir(), '.macvis', 'workspace', 'projects')
@@ -77,8 +78,7 @@ export class TeamOrchestrator {
   private persist(team: Team) {
     team.updatedAt = Date.now()
     try {
-      fs.mkdirSync(TEAMS_DIR, { recursive: true })
-      fs.writeFileSync(path.join(TEAMS_DIR, `${team.id}.json`), JSON.stringify(team, null, 2))
+      atomicWriteFileSync(path.join(TEAMS_DIR, `${team.id}.json`), JSON.stringify(team, null, 2))
     } catch {}
     getMainWindow()?.webContents.send('team:update', team)
   }

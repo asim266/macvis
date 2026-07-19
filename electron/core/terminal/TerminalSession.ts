@@ -37,4 +37,12 @@ export const TerminalManager = {
     const s = sessions.get(id)
     if (s) { try { s.child.kill('SIGTERM') } catch {} sessions.delete(id) }
   },
+
+  /** Terminate every live shell (called on app quit so none are orphaned). */
+  killAll() {
+    for (const s of sessions.values()) {
+      try { s.child.kill('SIGTERM') } catch {}
+    }
+    sessions.clear()
+  },
 }

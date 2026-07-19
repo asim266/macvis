@@ -3,6 +3,7 @@ import path from 'path'
 import os from 'os'
 import { execFile } from 'child_process'
 import { getMainWindow } from '../../main'
+import { atomicWriteFileSync } from '../util/atomicWrite'
 
 export type Cadence = 'interval' | 'hourly' | 'daily' | 'weekly'
 
@@ -25,7 +26,7 @@ let _ctr = 0
 const uid = () => `sch_${Date.now().toString(36)}_${(++_ctr).toString(36)}`
 
 function read(): Schedule[] { try { return JSON.parse(fs.readFileSync(FILE, 'utf-8')) } catch { return [] } }
-function write(s: Schedule[]) { try { fs.mkdirSync(path.dirname(FILE), { recursive: true }); fs.writeFileSync(FILE, JSON.stringify(s, null, 2)) } catch {} }
+function write(s: Schedule[]) { try { atomicWriteFileSync(FILE, JSON.stringify(s, null, 2)) } catch {} }
 
 function parseHM(time?: string): { h: number; m: number } {
   const [h, m] = (time || '09:00').split(':').map(Number)

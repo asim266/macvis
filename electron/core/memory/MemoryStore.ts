@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
+import { atomicWriteFileSync } from '../util/atomicWrite'
 
 export interface MemoryEntry { id: string; text: string; tags: string[]; ts: number }
 
@@ -13,7 +14,7 @@ function read(): MemoryEntry[] {
   try { return JSON.parse(fs.readFileSync(FILE, 'utf-8')) } catch { return [] }
 }
 function write(entries: MemoryEntry[]) {
-  try { fs.mkdirSync(path.dirname(FILE), { recursive: true }); fs.writeFileSync(FILE, JSON.stringify(entries, null, 2)) } catch {}
+  try { atomicWriteFileSync(FILE, JSON.stringify(entries, null, 2)) } catch {}
 }
 
 export const MemoryStore = {

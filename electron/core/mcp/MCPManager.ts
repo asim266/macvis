@@ -211,6 +211,20 @@ export class MCPManager {
     return { ok: true }
   }
 
+  /**
+   * Close every active MCP transport on app quit, killing the spawned child
+   * processes. Deliberately does NOT touch `mcps.<id>.enabled` in config (unlike
+   * disconnect()), so servers auto-reconnect on the next launch.
+   */
+  async shutdownAll(): Promise<void> {
+    const ids = [...this.active.keys()]
+    await Promise.allSettled(ids.map(async id => {
+      const mcp = this.active.get(id)
+      try { if (mcp?.transport) await mcp.transport.close() } catch {}
+      this.active.delete(id)
+    }))
+  }
+
   /** Auto-connect all MCPs marked enabled in config at app start */
   async connectAllEnabled(): Promise<void> {
     const config = ConfigStore.getInstance()
