@@ -134,6 +134,15 @@ describe('redactValues', () => {
   it('ignores empty/short values and leaves other text intact', () => {
     expect(redactValues('nothing to see', ['', undefined, 'a'])).toBe('nothing to see')
   })
+  it('masks a bare-UUID token that matches no known pattern (MCP stderr leak case)', () => {
+    const uuid = 'd203efae-128e-4c6d-876c-8344a3568cf1'
+    // redactSecrets alone can't catch a plain UUID — exact-match against the
+    // configured value is what scrubs the MCP-server-logged token.
+    expect(redactSecrets(`Initializing with environment token: ${uuid}`)).toContain(uuid)
+    const out = redactValues(`Initializing with environment token: ${uuid}`, [uuid])
+    expect(out).not.toContain(uuid)
+    expect(out).toContain('«redacted»')
+  })
 })
 
 describe('classifyComplexity', () => {
