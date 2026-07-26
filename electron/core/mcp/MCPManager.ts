@@ -142,11 +142,22 @@ export class MCPManager {
 
     this.emitStatus(id, displayName, 'connecting', 0)
 
+    // Declared out here so the catch block can close the child the transport
+    // spawns even if the handshake never completes.
+    let transport: StdioClientTransport | null = null
     try {
-      const transport = new StdioClientTransport({
+      transport = new StdioClientTransport({
         command,
         args,
         env,
+      })
+
+      // Track the transport IMMEDIATELY — StdioClientTransport forks the child on
+      // construction, so if the app quits (or disconnect runs) while the handshake
+      // is still in flight, shutdownAll/disconnect must be able to kill it. Without
+      // this, an in-flight or failed connect orphans the child on quit.
+      this.active.set(id, {
+        id, name: displayName, client: null as any, transport, tools: [], status: 'connecting',
       })
 
       const client = new Client(
@@ -180,6 +191,8 @@ export class MCPManager {
     } catch (err: any) {
       const msg = err.message || String(err)
       console.error(`MCP connect failed (${id}):`, msg)
+      // Kill the child the transport already spawned — otherwise it orphans.
+      try { if (transport) await transport.close() } catch {}
       this.active.set(id, {
         id,
         name: displayName,
