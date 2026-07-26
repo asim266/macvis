@@ -3,6 +3,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { ConfigStore } from '../config/ConfigStore'
 import { getMainWindow } from '../../main'
 import { MCP_REGISTRY, findServer, type MCPServerDef } from './MCPRegistry'
+import { redactAll } from '../security/redactConfig'
 
 export interface CustomMCP {
   id: string
@@ -150,6 +151,11 @@ export class MCPManager {
         command,
         args,
         env,
+        // Do NOT inherit the child's stderr into our process stderr (the default).
+        // MCP servers routinely log their own API tokens to stderr on startup —
+        // inheriting that leaks secrets into any log capturing our output. Pipe it
+        // instead and drain it through redaction below.
+        stderr: 'pipe',
       })
 
       // Track the transport IMMEDIATELY — StdioClientTransport forks the child on
@@ -172,6 +178,15 @@ export class MCPManager {
         setTimeout(() => reject(new Error('Connection timed out after 60s. If this is an OAuth-based MCP, complete the sign-in in your browser then click Connect again.')), 60_000)
       )
       await Promise.race([connectPromise, timeout])
+
+      // The child stdio is live now (connect started it). Drain its stderr so the
+      // pipe can't fill and block the child, scrubbing secrets before we log any
+      // of it. `redactAll` masks both known token patterns and exact configured
+      // secret values (catches bare-UUID tokens that match no pattern).
+      transport.stderr?.on('data', (chunk: Buffer) => {
+        const line = redactAll(chunk.toString()).replace(/\s+$/, '')
+        if (line) console.error(`[mcp:${id}] ${line.slice(0, 1000)}`)
+      })
 
       const { tools } = await client.listTools()
 
